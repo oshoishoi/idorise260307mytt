@@ -153,7 +153,6 @@
       { id: 52, stage: "duo MUSIC EXCHANGE", name: "カラフルスクリーム", time: "16:35-17:05" },
       { id: 53, stage: "duo MUSIC EXCHANGE", name: "FES☆TIVE", time: "17:05-17:35" },
       { id: 54, stage: "duo MUSIC EXCHANGE", name: "MEGAFON", time: "17:35-18:05" },
-      { id: 55, stage: "duo MUSIC EXCHANGE", name: "HIBANA", time: "18:10-18:40" },
       { id: 56, stage: "duo MUSIC EXCHANGE", name: "Ringwanderung", time: "18:40-19:10" },
       { id: 57, stage: "duo MUSIC EXCHANGE", name: "INUWASI", time: "19:10-19:40" },
       { id: 58, stage: "duo MUSIC EXCHANGE", name: "ジエメイ", time: "19:40-20:10" },
@@ -376,6 +375,7 @@
 
           // 画像生成用の固定横幅（720pxに最適化）
           const exportWidth = 720; 
+          const isMobileDevice = window.innerWidth < 640;
           
           const wrapper = document.createElement('div');
           wrapper.style.width = `${exportWidth}px`;
@@ -392,7 +392,7 @@
           clone.style.height = 'auto'; 
           clone.style.paddingBottom = '40px'; 
           
-          // ヘッダー統合（ガタつき防止）
+          // ヘッダー統合
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
@@ -408,34 +408,35 @@
             headerArea.appendChild(combinedRow);
           }
 
-          // 9:16（1列表示）かどうかの判定
-          const isHorizontalMode = aspectRatio === '9:16';
+          // 「9:16（1列表示）」または「スマホからの生成」の場合に一列リスト仕様にする
+          const isHorizontalMode = aspectRatio === '9:16' || isMobileDevice;
 
-          // カラム幅固定（720pxキャンバスに最適化）
+          // カラム幅固定
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
-            col.style.width = columns.length > 1 ? '350px' : '680px';
+            // スマホなら常に1列（横並びリスト）、PCの3:4なら2列
+            col.style.width = (isHorizontalMode || columns.length === 1) ? '680px' : '350px';
             col.style.flexShrink = '0';
           });
           
           const timelineContainer = clone.querySelector('.timeline-outer-container');
           if (timelineContainer) {
             timelineContainer.style.display = 'flex';
-            timelineContainer.style.flexDirection = 'row';
+            timelineContainer.style.flexDirection = (isHorizontalMode) ? 'column' : 'row';
+            timelineContainer.style.alignItems = 'center';
             timelineContainer.style.justifyContent = 'center';
             timelineContainer.style.gap = '5px';
             timelineContainer.style.padding = '0 5px';
           }
 
-          // カード内テキストの中央寄せロジック
+          // カード内の中央寄せ・レイアウト処理
           const cardBodies = clone.querySelectorAll('.image-card-body');
           cardBodies.forEach(body => {
              if (isHorizontalMode) {
-                // 1列レイアウト：横並び一行仕様
+                // スマホまたは1列設定：横一列レイアウト
                 body.classList.remove('flex-col');
                 body.classList.add('flex-row', 'items-center', 'justify-between');
                 
-                // メタ情報（時間・会場）を左に
                 const metaRow = body.querySelector('.image-meta-row');
                 if (metaRow) {
                    metaRow.classList.remove('mb-1');
@@ -444,7 +445,6 @@
                    metaRow.style.gap = '15px';
                 }
                 
-                // 名前と曲名を中央に
                 const nameContainer = body.querySelector('.image-name-container');
                 if (nameContainer) {
                    nameContainer.classList.remove('mt-1');
@@ -460,10 +460,16 @@
                    if (nameText) {
                       nameText.style.textAlign = 'center';
                       nameText.style.width = '100%';
+                      // ★スマホの場合のみフォントサイズを2倍にする
+                      if (isMobileDevice) {
+                         const currentSize = window.getComputedStyle(sourceElement.querySelector('.two-col-group-name')).fontSize;
+                         const sizeNum = parseFloat(currentSize);
+                         nameText.style.fontSize = (sizeNum * 2.2) + 'px'; // 2倍+アルファで読みやすく
+                      }
                    }
                 }
              } else {
-                // 2列レイアウト：垂直中央寄せ仕様
+                // PCでの3:4：2列垂直中央寄せレイアウト
                 body.classList.remove('flex-col');
                 body.classList.add('flex-col', 'items-center', 'justify-center');
                 
@@ -504,8 +510,8 @@
               textDiv.style.backgroundColor = 'transparent';
               textDiv.style.display = 'flex';
               textDiv.style.alignItems = 'center';
-              textDiv.style.justifyContent = 'center'; // 文字も中央寄せ
-              textDiv.style.lineHeight = '1.8'; // 表示切れ防止
+              textDiv.style.justifyContent = 'center'; // 常に中央寄せ
+              textDiv.style.lineHeight = '1.8'; 
               textDiv.style.color = input.value ? 'inherit' : '#9ca3af';
               textDiv.style.overflow = 'visible'; 
               textDiv.style.width = '100%';
@@ -695,7 +701,7 @@
                       <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* おすすめバッジ帯（左） */}
+                        {/* おすすめ帯バッジ（左） */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
@@ -708,6 +714,7 @@
                         )}
 
                         <div className={`image-card-body flex-1 p-2 sm:p-2.5 flex flex-col border-l-4 ${borderColor} min-w-0`}>
+                           {/* メタ情報：時刻と会場バッジ */}
                            <div className="image-meta-row flex items-center gap-1 sm:gap-2 mb-1 h-5 overflow-hidden shrink-0">
                               <div className={`px-1.5 py-0.5 rounded shadow-sm force-text-center h-full bg-gray-100/80`}>
                                 <span className="export-text-lift font-mono font-bold text-[8.5px] sm:text-[11px] leading-none text-gray-700 two-col-time-badge">{item.time}</span>
@@ -717,6 +724,7 @@
                               </div>
                            </div>
 
+                           {/* メイン：名前コンテナ */}
                            <div className="image-name-container relative pr-6 mt-1 flex-1 flex flex-col justify-center min-w-0">
                               <div className={`font-bold leading-[1.3] export-text-lift overflow-visible two-col-group-name text-gray-900 ${isRecommended ? 'font-black' : ''}`}>
                                 {item.name}
@@ -778,16 +786,19 @@
 
         return (
           <div className={`mx-auto pb-24 h-full overflow-y-auto w-full`}>
+            {/* ツールバー */}
             <div className="flex items-center justify-between bg-white p-2 rounded-xl shadow-sm border border-gray-100 mb-2 mt-2 mx-auto max-w-xl">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-700 whitespace-nowrap">サイズ:</span>
                 <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="text-[10px] sm:text-xs bg-gray-50 border border-gray-200 rounded px-1.5 py-1 outline-none cursor-pointer font-medium">
-                  <option value="9:16">9:16 (スマホ向・一行)</option>
+                  <option value="9:16">9:16 (スマホ向・中央寄せ)</option>
                   <option value="3:4">3:4 (2列/SNS向・中央寄せ)</option>
                 </select>
               </div>
               <button onClick={handleDownload} disabled={isGenerating} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}{isGenerating ? '生成中...' : '画像生成'}</button>
             </div>
+
+            {/* 画像コンテンツ */}
             <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative pt-6 sm:pt-10">
               <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
                 <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
@@ -812,6 +823,8 @@
                    </div>
                 </div>
               </div>
+
+              {/* タイムライン本体 */}
               <div className={`flex timeline-outer-container ${isTwoColumn ? 'flex-row items-start justify-center gap-[1px] px-[1px] py-4' : 'flex-col items-center py-4 px-2'}`}>
                 {isTwoColumn ? (
                   <>
