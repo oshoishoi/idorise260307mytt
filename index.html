@@ -55,7 +55,7 @@
       text-orientation: upright;
     }
 
-    /* スマホ画面表示用のフォント縮小設定（画像生成時はJSで上書き） */
+    /* スマホ画面表示用のフォント縮小設定 */
     @media (max-width: 640px) {
       .two-col-group-name {
         font-size: 0.62rem !important;
@@ -430,10 +430,10 @@
              
              if (isHorizontalMode) {
                 body.style.flexDirection = 'row';
-                body.style.justifyContent = 'center'; // 中央配置に変更
+                body.style.justifyContent = 'start'; 
                 body.style.paddingLeft = '15px';
                 body.style.paddingRight = '15px';
-                body.style.minHeight = '70px'; // 上下余白を絞る
+                body.style.minHeight = '80px'; 
                 body.style.paddingTop = '5px';
                 body.style.paddingBottom = '5px';
              }
@@ -442,8 +442,10 @@
              if (metaRow) {
                 metaRow.classList.add('justify-center', 'w-full');
                 if (isHorizontalMode) {
-                  metaRow.style.width = 'auto';
-                  metaRow.style.marginRight = '30px'; // 少し離す
+                  // ★グループ名の中央を縦に揃えるための固定幅オフセット設定
+                  metaRow.style.width = '140px'; 
+                  metaRow.style.flexShrink = '0';
+                  metaRow.style.marginRight = '0';
                   metaRow.style.marginBottom = '0';
                 } else {
                   metaRow.style.marginBottom = '6px';
@@ -455,18 +457,23 @@
              if (nameContainer) {
                 nameContainer.classList.add('items-center', 'justify-center');
                 if (isHorizontalMode) {
+                  nameContainer.style.flex = '1';
+                  nameContainer.style.display = 'flex';
                   nameContainer.style.flexDirection = 'row';
                   nameContainer.style.alignItems = 'baseline';
-                  nameContainer.style.gap = '15px'; // 名前と曲名の距離
+                  nameContainer.style.justifyContent = 'start'; 
+                  nameContainer.style.paddingLeft = '0';
                 }
                 
                 const nameText = nameContainer.querySelector('.two-col-group-name');
                 if (nameText) {
                    nameText.style.textAlign = 'center';
-                   nameText.style.width = 'auto';
                    nameText.style.lineHeight = '1.2';
                    if (isHorizontalMode) {
-                      nameText.style.fontSize = '36px'; // 巨大化
+                      // ★グループ名の横幅を固定して中央が揃うように
+                      nameText.style.width = '300px'; 
+                      // ★指示通りのフォントサイズ設定
+                      nameText.style.fontSize = isMobileDevice ? '64px' : '30px'; 
                       nameText.style.fontWeight = '900';
                    }
                 }
@@ -476,10 +483,11 @@
              if (songContainer) {
                 songContainer.classList.add('flex', 'items-center');
                 if (isHorizontalMode) {
-                   songContainer.style.fontSize = '12px'; // 標準サイズ
+                   songContainer.style.fontSize = '12px';
                    songContainer.style.marginTop = '0';
+                   songContainer.style.marginLeft = '15px'; 
+                   songContainer.style.textAlign = 'left'; 
                    songContainer.style.color = '#be185d';
-                   songContainer.style.textAlign = 'left'; // 曲名は左寄せ
                 }
              }
           });
@@ -544,9 +552,7 @@
           document.body.removeChild(wrapper);
           const url = canvas.toDataURL('image/png');
           const a = document.createElement('a');
-          a.href = url;
-          a.download = `my_timetable_${aspectRatio.replace(':', '_')}.png`;
-          a.click();
+          a.href = url; a.download = `my_timetable.png`; a.click();
         } catch (error) {
           console.error('画像生成エラー:', error);
         } finally {
@@ -578,8 +584,8 @@
               </div>
             </div>
             
-            <div className="flex-1 overflow-x-auto scrollbar-visible mt-1 px-4 relative">
-              <div className="flex flex-row gap-3 min-w-max h-full overflow-y-auto pb-32 hide-scrollbar relative scrollbar-visible">
+            <div className="flex-1 overflow-x-auto scrollbar-visible mt-1 px-4 relative scrollbar-visible">
+              <div className="flex flex-row gap-3 min-w-max h-full overflow-y-auto pb-32 hide-scrollbar relative">
                 <div className="absolute top-0 left-0 w-full pointer-events-none z-0">
                   {busyRanges.map((range, i) => (
                     <div
@@ -600,7 +606,7 @@
                   if (stageItems.length === 0) return null;
                   let previousEndTime = MIN_TIME;
                   return (
-                    <div key={stage} className="w-[80vw] sm:w-[280px] flex-shrink-0 flex flex-col bg-white/40 rounded-xl shadow-sm border border-gray-100 overflow-visible h-fit min-h-full z-10 text-ellipsis">
+                    <div key={stage} className="w-[80vw] sm:w-[280px] flex-shrink-0 flex flex-col bg-white/40 rounded-xl shadow-sm border border-gray-100 overflow-visible h-fit min-h-full z-10 text-ellipsis whitespace-nowrap">
                       <div className={`px-3 py-1 font-bold flex items-center gap-1.5 sticky top-0 z-30 text-xs rounded-t-xl ${stageColors[stage] || 'bg-gray-800 text-white'}`} style={{ height: `${STICKY_HEADER_HEIGHT}px` }}>
                         <MapPin size={14} />
                         <span className="truncate">{stage}</span>
@@ -624,7 +630,7 @@
                               >
                                 <div className="flex flex-col justify-center h-full w-full pr-1 overflow-hidden text-ellipsis whitespace-nowrap">
                                   <span className={`text-[9px] font-mono whitespace-nowrap leading-none mb-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>{item.time}</span>
-                                  {/* ★全ステージ一覧画面でグループ名の文字を大きく */}
+                                  {/* ★全ステージ一覧のグループ名を大きく */}
                                   <span className={`font-bold text-[12px] sm:text-[14px] leading-tight text-left ${isSelected ? 'text-white' : 'text-gray-900'}`}>{item.name}</span>
                                 </div>
                                 <div className="flex-shrink-0">
@@ -705,7 +711,7 @@
                             </div>
                             {isRecommended && !isGenerating && (
                               <div className="mt-1 flex items-center gap-1 p-0.5 px-1 bg-white/70 border border-pink-100 rounded-md overflow-hidden min-h-[16px]">
-                                < Music size={8} className="text-pink-300 shrink-0" />
+                                <Music size={8} className="text-pink-300 shrink-0" />
                                 <input 
                                   type="text"
                                   placeholder="曲名入力"
