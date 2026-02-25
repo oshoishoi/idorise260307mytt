@@ -30,27 +30,21 @@
       font-family: 'Zen Maru Gothic', sans-serif;
     }
     
+    /* スクロールバーのカスタマイズ */
     .scrollbar-visible::-webkit-scrollbar {
       -webkit-appearance: none;
       height: 10px;
-      display: block !important;
     }
     .scrollbar-visible::-webkit-scrollbar-thumb {
       border-radius: 5px;
       background-color: rgba(99, 102, 241, 0.5);
       border: 2px solid white;
     }
-    .scrollbar-visible::-webkit-scrollbar-track {
-      background-color: rgba(243, 244, 246, 1);
-    }
-    .scrollbar-visible {
-      scrollbar-width: auto;
-      scrollbar-color: rgba(99, 102, 241, 0.5) rgba(243, 244, 246, 1);
-    }
     
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
+    /* 上下中央揃えを強化しつつ、補正をかけやすくするクラス */
     .force-text-center {
       display: inline-flex;
       align-items: center;
@@ -68,7 +62,7 @@
     @media (max-width: 640px) {
       .two-col-group-name {
         font-size: 0.62rem !important;
-        letter-spacing: -0.04em;
+        letter-spacing: -0.05em;
         white-space: nowrap;
         line-height: 1.1;
       }
@@ -82,7 +76,6 @@
       }
     }
 
-    /* 手書き風フォントの適用 */
     .font-handwritten {
       font-family: 'Zen Maru Gothic', sans-serif;
       font-weight: 900;
@@ -97,6 +90,7 @@
     import { createRoot } from 'react-dom/client';
     import { CheckCircle2, Circle, MapPin, AlertTriangle, CalendarRange, ListTodo, Star, Coffee, Sparkles, Download, Loader2, Music } from 'lucide-react';
 
+    // 時刻パース関数
     function parseTime(timeStr) {
       if (!timeStr) return { start: 0, end: 0 };
       const parts = timeStr.split('-');
@@ -108,6 +102,7 @@
       return { start: parseHM(parts[0]), end: parseHM(parts[1]) };
     }
 
+    // 出演アイドルデータ (全8会場)
     const scheduleData = [
       { id: 1, stage: "Spotify O-EAST", name: "Palette Parade", time: "10:00-10:30" },
       { id: 2, stage: "Spotify O-EAST", name: "かすみ草とステラ", time: "10:30-11:00" },
@@ -384,13 +379,11 @@
           const sourceElement = document.getElementById('my-schedule-content');
           if (!sourceElement) return;
 
-          const exportWidth = 1200; 
-          const ratioValue = aspectRatio === '9:16' ? 9 / 16 : 3 / 4;
-          const exportHeight = exportWidth / ratioValue;
-
+          // 画像生成用の固定横幅（1000pxにコンパクト化して密度感をアップ）
+          const exportWidth = 1000; 
+          
           const wrapper = document.createElement('div');
           wrapper.style.width = `${exportWidth}px`;
-          wrapper.style.height = `${exportHeight}px`;
           wrapper.style.backgroundColor = '#f9fafb';
           wrapper.style.position = 'fixed';
           wrapper.style.left = '-9999px';
@@ -401,9 +394,10 @@
 
           const clone = sourceElement.cloneNode(true);
           clone.style.width = '100%';
-          clone.style.height = '100%';
-          clone.style.paddingBottom = '80px'; 
+          clone.style.height = 'auto'; // 高さは自動（中身にフィット）
+          clone.style.paddingBottom = '40px'; 
           
+          // ヘッダー統合（物理ガタつき解消）
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
@@ -419,9 +413,10 @@
             headerArea.appendChild(combinedRow);
           }
 
+          // 2列固定幅（画像内：横幅1000pxに合わせて調整）
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
-            col.style.width = columns.length > 1 ? '500px' : '900px';
+            col.style.width = columns.length > 1 ? '480px' : '900px';
             col.style.flexShrink = '0';
           });
           const timelineContainer = clone.querySelector('.timeline-outer-container');
@@ -429,10 +424,11 @@
             timelineContainer.style.display = 'flex';
             timelineContainer.style.flexDirection = 'row';
             timelineContainer.style.justifyContent = 'center';
-            timelineContainer.style.gap = '60px';
-            timelineContainer.style.padding = '0 60px';
+            timelineContainer.style.gap = '10px'; // 画像内でも「くっつく」設定
+            timelineContainer.style.padding = '0 10px';
           }
 
+          // フォームをテキストに置換
           const replaceInputWithDiv = (selector, defaultValue = '', placeholderAsDefault = false) => {
             const originalInputs = sourceElement.querySelectorAll(selector);
             const clonedInputs = clone.querySelectorAll(selector);
@@ -456,6 +452,7 @@
           replaceInputWithDiv('input.memo-input-field', '', true);
           replaceInputWithDiv('input.song-input-field', '', true);
 
+          // 全テキストを一律で -5.5px 上に引き上げる
           const textLifts = clone.querySelectorAll('.export-text-lift');
           textLifts.forEach(el => {
             el.style.position = 'relative';
@@ -467,12 +464,15 @@
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
+          // コンテンツの高さを測定
+          const measuredHeight = clone.offsetHeight + 100;
+
           const canvas = await html2canvas(wrapper, { 
             scale: 2, 
             useCORS: true,
             backgroundColor: '#f9fafb',
             width: exportWidth,
-            height: exportHeight,
+            height: measuredHeight, // 内容量に応じた動的な高さ
             logging: false
           });
 
@@ -621,13 +621,12 @@
                 return (
                   <React.Fragment key={item.id}>
                     <div className="relative pr-0">
-                      <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px]
+                      <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* ポップなおすすめ縦書きバッジ（パステルグラデーション） */}
+                        {/* デザイン提案：手書き風パステルおすすめバッジ */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
-                             {/* キラッと光る白星アイコン（パステルピンク） */}
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
                                 <Star size={9} className="fill-pink-400 text-pink-400" />
                              </div>
@@ -682,7 +681,7 @@
                       <div className="relative py-0.5">
                         <div className="relative p-1 px-2 flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg shadow-sm h-7 sm:h-8 mx-0.5">
                           <div className="flex items-center gap-0.5 text-gray-500 whitespace-nowrap h-full shrink-0"><Coffee size={10} /><span className="export-text-lift text-[8.5px] sm:text-[10px] font-bold text-gray-700 leading-none">{gapMinutes}分 空き</span></div>
-                          <input type="text" placeholder="メモ入力" value={gapMemos[gapKey] || ''} onChange={(e) => handleMemoChange(gapKey, e.target.value)} className="memo-input-field text-[8.5px] sm:text-[10px] bg-white border border-gray-200 rounded px-1 py-0.5 w-full focus:outline-none focus:ring-1 focus:ring-indigo-500 export-text-lift h-full" />
+                          <input type="text" placeholder="メモ入力" value={gapMemos[gapKey] || ''} onChange={(e) => handleMemoChange(gapKey, e.target.value)} className="memo-input-field text-[8.5px] sm:text-[10px] bg-white border border-gray-200 rounded px-1.5 py-0.5 w-full focus:outline-none focus:ring-1 focus:ring-indigo-500 export-text-lift h-full" />
                         </div>
                       </div>
                     )}
@@ -718,7 +717,7 @@
                    <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center">
                       <input 
                         type="text" 
-                        placeholder="名前入力" 
+                        placeholder="名前を入力" 
                         value={userName} 
                         onChange={(e) => setUserName(e.target.value)} 
                         className="name-input-field text-[14px] font-bold text-center pr-0.5 text-gray-800 bg-transparent w-[80px] focus:outline-none placeholder-gray-300" 
