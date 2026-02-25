@@ -375,6 +375,7 @@
 
           const exportWidth = 720; 
           const isMobileDevice = window.innerWidth < 640;
+          const isHorizontalMode = aspectRatio === '9:16' || isMobileDevice;
           
           const wrapper = document.createElement('div');
           wrapper.style.width = `${exportWidth}px`;
@@ -399,14 +400,12 @@
             const combinedRow = document.createElement('div');
             combinedRow.className = 'w-full flex items-center justify-center gap-6 py-6 bg-white';
             combinedRow.innerHTML = `
-              <span class="export-text-lift text-[20px] font-black text-indigo-900">IDORISE!! FESTIVAL 2026</span>
+              <span class="export-text-lift text-[22px] font-black text-indigo-900 font-sans">IDORISE!! FESTIVAL 2026</span>
               <span class="export-text-lift px-3 py-1 bg-indigo-500 text-white rounded font-bold text-[12px]">Day1: 3/7(土)</span>
-              <span class="export-text-lift text-[18px] font-bold text-gray-800">${nameValue} のタイテ</span>
+              <span class="export-text-lift text-[20px] font-bold text-gray-800">${nameValue} のタイテ</span>
             `;
             headerArea.appendChild(combinedRow);
           }
-
-          const isHorizontalMode = aspectRatio === '9:16' || isMobileDevice;
 
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
@@ -431,9 +430,12 @@
              
              if (isHorizontalMode) {
                 body.style.flexDirection = 'row';
-                body.style.justifyContent = 'space-between';
-                body.style.paddingLeft = '12px';
-                body.style.paddingRight = '12px';
+                body.style.justifyContent = 'center'; // 中央配置に変更
+                body.style.paddingLeft = '15px';
+                body.style.paddingRight = '15px';
+                body.style.minHeight = '70px'; // 上下余白を絞る
+                body.style.paddingTop = '5px';
+                body.style.paddingBottom = '5px';
              }
 
              const metaRow = body.querySelector('.image-meta-row');
@@ -441,7 +443,8 @@
                 metaRow.classList.add('justify-center', 'w-full');
                 if (isHorizontalMode) {
                   metaRow.style.width = 'auto';
-                  metaRow.style.marginRight = '20px';
+                  metaRow.style.marginRight = '30px'; // 少し離す
+                  metaRow.style.marginBottom = '0';
                 } else {
                   metaRow.style.marginBottom = '6px';
                 }
@@ -450,27 +453,33 @@
              
              const nameContainer = body.querySelector('.image-name-container');
              if (nameContainer) {
-                nameContainer.classList.add('items-center', 'justify-center', 'w-full');
-                nameContainer.style.marginTop = '0';
-                nameContainer.style.paddingRight = '0';
+                nameContainer.classList.add('items-center', 'justify-center');
+                if (isHorizontalMode) {
+                  nameContainer.style.flexDirection = 'row';
+                  nameContainer.style.alignItems = 'baseline';
+                  nameContainer.style.gap = '15px'; // 名前と曲名の距離
+                }
                 
                 const nameText = nameContainer.querySelector('.two-col-group-name');
                 if (nameText) {
                    nameText.style.textAlign = 'center';
-                   nameText.style.width = '100%';
-                   nameText.style.lineHeight = '1.5';
-                   if (isMobileDevice) {
-                      nameText.style.fontSize = '36px'; 
+                   nameText.style.width = 'auto';
+                   nameText.style.lineHeight = '1.2';
+                   if (isHorizontalMode) {
+                      nameText.style.fontSize = '36px'; // 巨大化
+                      nameText.style.fontWeight = '900';
                    }
                 }
              }
 
              const songContainer = body.querySelector('.song-container-for-image');
              if (songContainer) {
-                songContainer.classList.add('justify-center', 'w-full');
-                if (!isHorizontalMode) songContainer.style.marginTop = '6px';
-                if (isMobileDevice) {
-                   songContainer.style.fontSize = '12px';
+                songContainer.classList.add('flex', 'items-center');
+                if (isHorizontalMode) {
+                   songContainer.style.fontSize = '12px'; // 標準サイズ
+                   songContainer.style.marginTop = '0';
+                   songContainer.style.color = '#be185d';
+                   songContainer.style.textAlign = 'left'; // 曲名は左寄せ
                 }
              }
           });
@@ -615,7 +624,8 @@
                               >
                                 <div className="flex flex-col justify-center h-full w-full pr-1 overflow-hidden text-ellipsis whitespace-nowrap">
                                   <span className={`text-[9px] font-mono whitespace-nowrap leading-none mb-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>{item.time}</span>
-                                  <span className={`font-bold text-[10px] leading-tight text-left ${isSelected ? 'text-white' : 'text-gray-900'}`}>{item.name}</span>
+                                  {/* ★全ステージ一覧画面でグループ名の文字を大きく */}
+                                  <span className={`font-bold text-[12px] sm:text-[14px] leading-tight text-left ${isSelected ? 'text-white' : 'text-gray-900'}`}>{item.name}</span>
                                 </div>
                                 <div className="flex-shrink-0">
                                   {!isSelected && <Circle className="text-gray-300" size={14} />}
@@ -695,8 +705,7 @@
                             </div>
                             {isRecommended && !isGenerating && (
                               <div className="mt-1 flex items-center gap-1 p-0.5 px-1 bg-white/70 border border-pink-100 rounded-md overflow-hidden min-h-[16px]">
-                                <Music size={8} className="text-pink-300 shrink-0" />
-                                {/* ★案1：defaultValue + onBlur 方式に変更 */}
+                                < Music size={8} className="text-pink-300 shrink-0" />
                                 <input 
                                   type="text"
                                   placeholder="曲名入力"
@@ -736,7 +745,6 @@
                     <div className="relative py-0.5">
                       <div className="relative p-1 px-2 flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg shadow-sm h-7 sm:h-8 mx-0.5">
                         <div className="flex items-center gap-0.5 text-gray-500 whitespace-nowrap h-full shrink-0"><Coffee size={10} /><span className="export-text-lift text-[8.5px] sm:text-[10px] font-bold text-gray-700 leading-none">{gapMinutes}分 空き</span></div>
-                        {/* ★案1：defaultValue + onBlur 方式に変更 */}
                         <input 
                           type="text" 
                           placeholder="メモ入力" 
