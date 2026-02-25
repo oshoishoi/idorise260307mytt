@@ -55,6 +55,7 @@
       text-orientation: upright;
     }
 
+    /* スマホ2列表示時のフォント・レイアウト微調整 */
     @media (max-width: 640px) {
       .two-col-group-name {
         font-size: 0.62rem !important;
@@ -373,6 +374,7 @@
           const sourceElement = document.getElementById('my-schedule-content');
           if (!sourceElement) return;
 
+          // 画像生成用の固定横幅（720pxに最適化）
           const exportWidth = 720; 
           
           const wrapper = document.createElement('div');
@@ -412,6 +414,7 @@
             col.style.width = columns.length > 1 ? '350px' : '680px';
             col.style.flexShrink = '0';
           });
+          
           const timelineContainer = clone.querySelector('.timeline-outer-container');
           if (timelineContainer) {
             timelineContainer.style.display = 'flex';
@@ -420,6 +423,44 @@
             timelineContainer.style.gap = '5px';
             timelineContainer.style.padding = '0 5px';
           }
+
+          // カード内テキストの中央寄せロジック（1列・2列共通で適用）
+          const cardBodies = clone.querySelectorAll('.image-card-body');
+          cardBodies.forEach(body => {
+             // コンテナ全体をフレックス中央揃えにする
+             body.classList.remove('flex-col');
+             body.classList.add('flex-col', 'items-center', 'justify-center');
+             
+             // メタ情報（時間・会場）行
+             const metaRow = body.querySelector('.image-meta-row');
+             if (metaRow) {
+                metaRow.classList.add('justify-center', 'w-full');
+                metaRow.style.marginBottom = '4px';
+                metaRow.style.gap = '10px';
+             }
+             
+             // 名前コンテナ
+             const nameContainer = body.querySelector('.image-name-container');
+             if (nameContainer) {
+                nameContainer.classList.add('items-center', 'justify-center', 'w-full');
+                nameContainer.style.marginTop = '0';
+                nameContainer.style.paddingRight = '0';
+                
+                const nameText = nameContainer.querySelector('.two-col-group-name');
+                if (nameText) {
+                   nameText.style.textAlign = 'center';
+                   nameText.style.width = '100%';
+                   nameText.style.lineHeight = '1.4';
+                }
+             }
+
+             // オススメ曲コンテナ（画像生成時用）
+             const songContainer = body.querySelector('.song-container-for-image');
+             if (songContainer) {
+                songContainer.classList.add('justify-center', 'w-full');
+                songContainer.style.marginTop = '4px';
+             }
+          });
 
           // フォームをテキストに置換
           const replaceInputWithDiv = (selector, defaultValue = '', placeholderAsDefault = false) => {
@@ -436,9 +477,12 @@
               textDiv.style.backgroundColor = 'transparent';
               textDiv.style.display = 'flex';
               textDiv.style.alignItems = 'center';
-              textDiv.style.lineHeight = '1.4';
+              textDiv.style.justifyContent = 'center'; // 常に中央寄せ
+              textDiv.style.lineHeight = '1.8'; // 表示切れ防止のためさらに広く
               textDiv.style.color = input.value ? 'inherit' : '#9ca3af';
-              textDiv.style.overflow = 'visible';
+              textDiv.style.overflow = 'visible'; 
+              textDiv.style.width = '100%';
+
               clonedInput.parentNode.insertBefore(textDiv, clonedInput);
               clonedInput.style.display = 'none';
             });
@@ -471,7 +515,7 @@
             useCORS: true,
             backgroundColor: '#f9fafb',
             width: exportWidth,
-            height: measuredHeight,
+            height: measuredHeight, 
             logging: false
           });
 
@@ -479,7 +523,7 @@
           const url = canvas.toDataURL('image/png');
           const a = document.createElement('a');
           a.href = url;
-          a.download = `my_timetable_${userName || 'idol'}.png`;
+          a.download = `my_timetable_${aspectRatio.replace(':', '_')}.png`;
           a.click();
         } catch (error) {
           console.error('画像生成エラー:', error);
@@ -623,7 +667,7 @@
                       <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* デザイン提案：パステル・手書き風おすすめ帯 */}
+                        {/* おすすめバッジ帯 */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
@@ -635,9 +679,9 @@
                           </div>
                         )}
 
-                        <div className={`flex-1 p-2 sm:p-2.5 flex flex-col border-l-4 ${borderColor} min-w-0`}>
-                           <div className="flex items-center gap-1 sm:gap-2 mb-1 h-5 overflow-hidden">
-                              <div className="px-1.5 py-0.5 rounded shadow-sm force-text-center h-full bg-gray-100/80">
+                        <div className={`image-card-body flex-1 p-2 sm:p-2.5 flex flex-col border-l-4 ${borderColor} min-w-0`}>
+                           <div className="image-meta-row flex items-center gap-1 sm:gap-2 mb-1 h-5 overflow-hidden shrink-0">
+                              <div className={`px-1.5 py-0.5 rounded shadow-sm force-text-center h-full bg-gray-100/80`}>
                                 <span className="export-text-lift font-mono font-bold text-[8.5px] sm:text-[11px] leading-none text-gray-700 two-col-time-badge">{item.time}</span>
                               </div>
                               <div className={`px-2 py-0.5 rounded-full shadow-sm force-text-center h-full max-w-[55%] ${badgeColor}`}>
@@ -645,11 +689,11 @@
                               </div>
                            </div>
 
-                           <div className="relative pr-6">
+                           <div className="image-name-container relative pr-6 mt-1 flex-1 flex flex-col justify-center min-w-0">
                               <div className={`font-bold leading-[1.3] export-text-lift overflow-visible two-col-group-name text-gray-900 ${isRecommended ? 'font-black' : ''}`}>
                                 {item.name}
                               </div>
-                              {isRecommended && (
+                              {isRecommended && !isGenerating && (
                                 <div className="mt-1 flex items-center gap-1 p-0.5 px-1 bg-white/70 border border-pink-100 rounded-md overflow-hidden min-h-[16px]">
                                   <Music size={8} className="text-pink-300 shrink-0" />
                                   <input 
@@ -659,6 +703,13 @@
                                     onChange={(e) => handleSongChange(item.id, e.target.value)}
                                     className="song-input-field text-[8.5px] font-bold bg-transparent w-full focus:outline-none placeholder-pink-100 text-pink-900 export-text-lift leading-none"
                                   />
+                                </div>
+                              )}
+                              {/* 画像生成時専用の曲名コンテナ */}
+                              {isRecommended && isGenerating && (
+                                <div className="song-container-for-image mt-1.5 flex items-center gap-1 overflow-visible">
+                                   <Music size={10} className="text-pink-300 shrink-0" />
+                                   <input type="text" className="song-input-field hidden" />
                                 </div>
                               )}
                            </div>
@@ -696,8 +747,8 @@
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-700 whitespace-nowrap">サイズ:</span>
                 <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="text-[10px] sm:text-xs bg-gray-50 border border-gray-200 rounded px-1.5 py-1 outline-none cursor-pointer font-medium">
-                  <option value="9:16">9:16 (スマホ向)</option>
-                  <option value="3:4">3:4 (2列/SNS向)</option>
+                  <option value="9:16">9:16 (スマホ向・中央寄せ)</option>
+                  <option value="3:4">3:4 (2列/SNS向・中央寄せ)</option>
                 </select>
               </div>
               <button onClick={handleDownload} disabled={isGenerating} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}{isGenerating ? '生成中...' : '画像生成'}</button>
