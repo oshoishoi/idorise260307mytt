@@ -392,7 +392,7 @@
           clone.style.height = 'auto'; 
           clone.style.paddingBottom = '40px'; 
           
-          // ヘッダー統合（ガタつき防止）
+          // ヘッダー統合
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
@@ -408,13 +408,12 @@
             headerArea.appendChild(combinedRow);
           }
 
-          // 「9:16（1列表示）」または「スマホからの生成」の場合に一列リスト仕様にする
+          // 「9:16（1列表示）」または「スマホからの生成」の場合に一列仕様を強制
           const isHorizontalMode = aspectRatio === '9:16' || isMobileDevice;
 
           // カラム幅固定
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
-            // スマホまたは一行設定なら1列、PCの3:4なら2列
             col.style.width = (isHorizontalMode || columns.length === 1) ? '680px' : '350px';
             col.style.flexShrink = '0';
           });
@@ -429,73 +428,64 @@
             timelineContainer.style.padding = '0 5px';
           }
 
-          // カード内テキストの中央寄せロジック
+          // カード内テキストの中央寄せ・レイアウト処理
           const cardBodies = clone.querySelectorAll('.image-card-body');
           cardBodies.forEach(body => {
+             // コンテナ全体を中央揃え
+             body.classList.remove('flex-col');
+             body.classList.add('flex-col', 'items-center', 'justify-center');
+             
+             // 1列モード（スマホ/9:16）の場合は横並びも適用
              if (isHorizontalMode) {
-                // スマホまたは1列設定：横一列レイアウト
-                body.classList.remove('flex-col');
-                body.classList.add('flex-row', 'items-center', 'justify-between');
-                
-                const metaRow = body.querySelector('.image-meta-row');
-                if (metaRow) {
-                   metaRow.classList.remove('mb-1');
-                   metaRow.style.marginBottom = '0';
-                   metaRow.style.flexShrink = '0';
-                   metaRow.style.gap = '15px';
+                body.style.flexDirection = 'row';
+                body.style.justifyContent = 'space-between';
+                body.style.paddingLeft = '10px';
+                body.style.paddingRight = '10px';
+             }
+
+             // メタ情報（時間・会場）行
+             const metaRow = body.querySelector('.image-meta-row');
+             if (metaRow) {
+                metaRow.classList.add('justify-center', 'w-full');
+                if (isHorizontalMode) {
+                  metaRow.style.width = 'auto';
+                  metaRow.style.marginRight = '20px';
+                } else {
+                  metaRow.style.marginBottom = '4px';
                 }
+                metaRow.style.gap = '10px';
+             }
+             
+             // 名前コンテナ
+             const nameContainer = body.querySelector('.image-name-container');
+             if (nameContainer) {
+                nameContainer.classList.add('items-center', 'justify-center', 'w-full');
+                nameContainer.style.marginTop = '0';
+                nameContainer.style.paddingRight = '0';
                 
-                const nameContainer = body.querySelector('.image-name-container');
-                if (nameContainer) {
-                   nameContainer.classList.remove('mt-1');
-                   nameContainer.style.marginTop = '0';
-                   nameContainer.style.paddingRight = '0';
-                   nameContainer.style.flex = '1';
-                   nameContainer.style.display = 'flex';
-                   nameContainer.style.flexDirection = 'column';
-                   nameContainer.style.alignItems = 'center';
-                   nameContainer.style.justifyContent = 'center';
-                   
-                   const nameText = nameContainer.querySelector('.two-col-group-name');
-                   if (nameText) {
-                      nameText.style.textAlign = 'center';
-                      nameText.style.width = '100%';
-                      // スマホの場合のみフォントサイズを2倍にする
-                      if (isMobileDevice) {
-                         const currentSize = window.getComputedStyle(sourceElement.querySelector('.two-col-group-name')).fontSize;
-                         const sizeNum = parseFloat(currentSize);
-                         nameText.style.fontSize = (sizeNum * 2.2) + 'px'; 
-                      }
-                   }
-                }
-             } else {
-                // PCでの3:4：2列垂直中央寄せレイアウト
-                body.classList.remove('flex-col');
-                body.classList.add('flex-col', 'items-center', 'justify-center');
-                
-                const metaRow = body.querySelector('.image-meta-row');
-                if (metaRow) {
-                   metaRow.classList.add('justify-center', 'w-full');
-                   metaRow.style.marginBottom = '4px';
-                   metaRow.style.gap = '10px';
-                }
-                
-                const nameContainer = body.querySelector('.image-name-container');
-                if (nameContainer) {
-                   nameContainer.classList.add('items-center', 'justify-center', 'w-full');
-                   nameContainer.style.marginTop = '0';
-                   nameContainer.style.paddingRight = '0';
-                   
-                   const nameText = nameContainer.querySelector('.two-col-group-name');
-                   if (nameText) {
-                      nameText.style.textAlign = 'center';
-                      nameText.style.width = '100%';
+                const nameText = nameContainer.querySelector('.two-col-group-name');
+                if (nameText) {
+                   nameText.style.textAlign = 'center';
+                   nameText.style.width = '100%';
+                   nameText.style.lineHeight = '1.4';
+                   // ★スマホからの生成時はフォントサイズを2倍にする
+                   if (isMobileDevice) {
+                      const currentSize = window.getComputedStyle(sourceElement.querySelector('.two-col-group-name')).fontSize;
+                      const sizeNum = parseFloat(currentSize);
+                      nameText.style.fontSize = (sizeNum * 2.0) + 'px'; 
                    }
                 }
              }
+
+             // オススメ曲コンテナ
+             const songContainer = body.querySelector('.song-container-for-image');
+             if (songContainer) {
+                songContainer.classList.add('justify-center', 'w-full');
+                if (!isHorizontalMode) songContainer.style.marginTop = '4px';
+             }
           });
 
-          // フォームをテキストに置換
+          // フォーム置換
           const replaceInputWithDiv = (selector, defaultValue = '', placeholderAsDefault = false) => {
             const originalInputs = sourceElement.querySelectorAll(selector);
             const clonedInputs = clone.querySelectorAll(selector);
@@ -510,12 +500,11 @@
               textDiv.style.backgroundColor = 'transparent';
               textDiv.style.display = 'flex';
               textDiv.style.alignItems = 'center';
-              textDiv.style.justifyContent = 'center'; // 常に中央寄せ
+              textDiv.style.justifyContent = 'center'; // 文字も中央寄せ
               textDiv.style.lineHeight = '1.8'; 
               textDiv.style.color = input.value ? 'inherit' : '#9ca3af';
               textDiv.style.overflow = 'visible'; 
               textDiv.style.width = '100%';
-
               clonedInput.parentNode.insertBefore(textDiv, clonedInput);
               clonedInput.style.display = 'none';
             });
@@ -700,7 +689,7 @@
                       <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* おすすめ帯バッジ（左） */}
+                        {/* おすすめバッジ帯（左） */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
