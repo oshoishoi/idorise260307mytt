@@ -55,15 +55,15 @@
       text-orientation: upright;
     }
 
-    /* レスポンシブ：2列表示かつスマホ時のフォント縮小 */
     @media (max-width: 640px) {
       .two-col-group-name {
-        font-size: 0.65rem !important;
+        font-size: 0.62rem !important;
         letter-spacing: -0.05em;
         white-space: nowrap;
+        line-height: 1.1;
       }
-      .two-col-badge {
-        font-size: 0.55rem !important;
+      .two-col-time-badge {
+        font-size: 0.65rem !important;
         padding: 0px 2px !important;
       }
       .pop-badge-text {
@@ -373,8 +373,7 @@
           const sourceElement = document.getElementById('my-schedule-content');
           if (!sourceElement) return;
 
-          // 画像生成用の固定横幅（コンパクト化して密度感をアップ）
-          const exportWidth = 1000; 
+          const exportWidth = 720; 
           
           const wrapper = document.createElement('div');
           wrapper.style.width = `${exportWidth}px`;
@@ -391,26 +390,26 @@
           clone.style.height = 'auto'; 
           clone.style.paddingBottom = '40px'; 
           
-          // ヘッダー統合（ガタつき防止）
+          // ヘッダー統合
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
             const nameValue = inputField.value || '名前';
             headerArea.innerHTML = '';
             const combinedRow = document.createElement('div');
-            combinedRow.className = 'w-full flex items-center justify-center gap-10 py-10 bg-white';
+            combinedRow.className = 'w-full flex items-center justify-center gap-6 py-6 bg-white';
             combinedRow.innerHTML = `
-              <span class="export-text-lift text-[28px] font-black text-indigo-900">IDORISE!! FESTIVAL 2026</span>
-              <span class="export-text-lift px-5 py-2 bg-indigo-500 text-white rounded-lg font-bold text-[18px]">Day1: 3/7(土)</span>
-              <span class="export-text-lift text-[24px] font-bold text-gray-800">${nameValue} のタイテ</span>
+              <span class="export-text-lift text-[20px] font-black text-indigo-900">IDORISE!! FESTIVAL 2026</span>
+              <span class="export-text-lift px-3 py-1 bg-indigo-500 text-white rounded font-bold text-[12px]">Day1: 3/7(土)</span>
+              <span class="export-text-lift text-[18px] font-bold text-gray-800">${nameValue} のタイテ</span>
             `;
             headerArea.appendChild(combinedRow);
           }
 
-          // 2列固定幅
+          // カラム幅固定
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
-            col.style.width = columns.length > 1 ? '480px' : '900px';
+            col.style.width = columns.length > 1 ? '350px' : '680px';
             col.style.flexShrink = '0';
           });
           const timelineContainer = clone.querySelector('.timeline-outer-container');
@@ -418,8 +417,8 @@
             timelineContainer.style.display = 'flex';
             timelineContainer.style.flexDirection = 'row';
             timelineContainer.style.justifyContent = 'center';
-            timelineContainer.style.gap = '10px';
-            timelineContainer.style.padding = '0 10px';
+            timelineContainer.style.gap = '5px';
+            timelineContainer.style.padding = '0 5px';
           }
 
           // フォームをテキストに置換
@@ -437,12 +436,9 @@
               textDiv.style.backgroundColor = 'transparent';
               textDiv.style.display = 'flex';
               textDiv.style.alignItems = 'center';
-              textDiv.style.lineHeight = '1.4'; // 行間を少し広げて欠けを防ぐ
+              textDiv.style.lineHeight = '1.4';
               textDiv.style.color = input.value ? 'inherit' : '#9ca3af';
-              
-              // 重要：画像生成時に文字が切れないようにoverflowをvisibleに
               textDiv.style.overflow = 'visible';
-              
               clonedInput.parentNode.insertBefore(textDiv, clonedInput);
               clonedInput.style.display = 'none';
             });
@@ -450,7 +446,6 @@
           replaceInputWithDiv('input.memo-input-field', '', true);
           replaceInputWithDiv('input.song-input-field', '', true);
 
-          // テキストコンテナのoverflowを全解除して文字欠けを防ぐ
           const allTextDivs = clone.querySelectorAll('.export-text-lift, .two-col-group-name');
           allTextDivs.forEach(div => {
              div.style.overflow = 'visible';
@@ -469,7 +464,6 @@
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
-          // 高さを動的に測定
           const measuredHeight = clone.offsetHeight + 100;
 
           const canvas = await html2canvas(wrapper, { 
@@ -519,7 +513,7 @@
             </div>
             
             <div className="flex-1 overflow-x-auto scrollbar-visible mt-1 px-4 relative">
-              <div className="flex flex-row gap-3 min-w-max h-full overflow-y-auto pb-8 hide-scrollbar relative">
+              <div className="flex flex-row gap-3 min-w-max h-full overflow-y-auto pb-32 hide-scrollbar relative">
                 <div className="absolute top-0 left-0 w-full pointer-events-none z-0">
                   {busyRanges.map((range, i) => (
                     <div
@@ -629,7 +623,7 @@
                       <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* 手書き風パステルおすすめ帯 */}
+                        {/* デザイン提案：パステル・手書き風おすすめ帯 */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
@@ -642,7 +636,6 @@
                         )}
 
                         <div className={`flex-1 p-2 sm:p-2.5 flex flex-col border-l-4 ${borderColor} min-w-0`}>
-                           {/* ヘッダー：時刻と会場バッジ */}
                            <div className="flex items-center gap-1 sm:gap-2 mb-1 h-5 overflow-hidden">
                               <div className="px-1.5 py-0.5 rounded shadow-sm force-text-center h-full bg-gray-100/80">
                                 <span className="export-text-lift font-mono font-bold text-[8.5px] sm:text-[11px] leading-none text-gray-700 two-col-time-badge">{item.time}</span>
@@ -653,7 +646,6 @@
                            </div>
 
                            <div className="relative pr-6">
-                              {/* アーティスト名：1行、縮小、欠け防止 */}
                               <div className={`font-bold leading-[1.3] export-text-lift overflow-visible two-col-group-name text-gray-900 ${isRecommended ? 'font-black' : ''}`}>
                                 {item.name}
                               </div>
@@ -710,13 +702,13 @@
               </div>
               <button onClick={handleDownload} disabled={isGenerating} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}{isGenerating ? '生成中...' : '画像生成'}</button>
             </div>
-            <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative">
+            <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative pt-6 sm:pt-10">
               <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
                 <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
                    <div className="flex items-center gap-1.5 shrink-0 h-6">
                       <h2 className="text-[14px] sm:text-[16px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2>
                       <div className="px-1.5 py-0 bg-indigo-500 rounded-sm flex items-center justify-center h-4.5 translate-y-[1px]">
-                         <span className="export-text-lift text-[9px] font-bold text-white leading-none">Day1: 3/7(土)</span>
+                         <span className="export-text-lift text-[9px] sm:text-[10px] font-bold text-white leading-none">Day1: 3/7(土)</span>
                       </div>
                    </div>
                    <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center">
