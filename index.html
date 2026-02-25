@@ -392,7 +392,7 @@
           clone.style.height = 'auto'; 
           clone.style.paddingBottom = '40px'; 
           
-          // ヘッダー統合
+          // ヘッダー統合（ガタつき防止）
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
@@ -408,7 +408,10 @@
             headerArea.appendChild(combinedRow);
           }
 
-          // カラム幅固定
+          // 9:16（1列表示）かどうかの判定
+          const isHorizontalMode = aspectRatio === '9:16';
+
+          // カラム幅固定（720pxキャンバスに最適化）
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
             col.style.width = columns.length > 1 ? '350px' : '680px';
@@ -424,41 +427,65 @@
             timelineContainer.style.padding = '0 5px';
           }
 
-          // カード内テキストの中央寄せロジック（1列・2列共通で適用）
+          // カード内テキストの中央寄せロジック
           const cardBodies = clone.querySelectorAll('.image-card-body');
           cardBodies.forEach(body => {
-             // コンテナ全体をフレックス中央揃えにする
-             body.classList.remove('flex-col');
-             body.classList.add('flex-col', 'items-center', 'justify-center');
-             
-             // メタ情報（時間・会場）行
-             const metaRow = body.querySelector('.image-meta-row');
-             if (metaRow) {
-                metaRow.classList.add('justify-center', 'w-full');
-                metaRow.style.marginBottom = '4px';
-                metaRow.style.gap = '10px';
-             }
-             
-             // 名前コンテナ
-             const nameContainer = body.querySelector('.image-name-container');
-             if (nameContainer) {
-                nameContainer.classList.add('items-center', 'justify-center', 'w-full');
-                nameContainer.style.marginTop = '0';
-                nameContainer.style.paddingRight = '0';
+             if (isHorizontalMode) {
+                // 1列レイアウト：横並び一行仕様
+                body.classList.remove('flex-col');
+                body.classList.add('flex-row', 'items-center', 'justify-between');
                 
-                const nameText = nameContainer.querySelector('.two-col-group-name');
-                if (nameText) {
-                   nameText.style.textAlign = 'center';
-                   nameText.style.width = '100%';
-                   nameText.style.lineHeight = '1.4';
+                // メタ情報（時間・会場）を左に
+                const metaRow = body.querySelector('.image-meta-row');
+                if (metaRow) {
+                   metaRow.classList.remove('mb-1');
+                   metaRow.style.marginBottom = '0';
+                   metaRow.style.flexShrink = '0';
+                   metaRow.style.gap = '15px';
                 }
-             }
-
-             // オススメ曲コンテナ（画像生成時用）
-             const songContainer = body.querySelector('.song-container-for-image');
-             if (songContainer) {
-                songContainer.classList.add('justify-center', 'w-full');
-                songContainer.style.marginTop = '4px';
+                
+                // 名前と曲名を中央に
+                const nameContainer = body.querySelector('.image-name-container');
+                if (nameContainer) {
+                   nameContainer.classList.remove('mt-1');
+                   nameContainer.style.marginTop = '0';
+                   nameContainer.style.paddingRight = '0';
+                   nameContainer.style.flex = '1';
+                   nameContainer.style.display = 'flex';
+                   nameContainer.style.flexDirection = 'column';
+                   nameContainer.style.alignItems = 'center';
+                   nameContainer.style.justifyContent = 'center';
+                   
+                   const nameText = nameContainer.querySelector('.two-col-group-name');
+                   if (nameText) {
+                      nameText.style.textAlign = 'center';
+                      nameText.style.width = '100%';
+                   }
+                }
+             } else {
+                // 2列レイアウト：垂直中央寄せ仕様
+                body.classList.remove('flex-col');
+                body.classList.add('flex-col', 'items-center', 'justify-center');
+                
+                const metaRow = body.querySelector('.image-meta-row');
+                if (metaRow) {
+                   metaRow.classList.add('justify-center', 'w-full');
+                   metaRow.style.marginBottom = '4px';
+                   metaRow.style.gap = '10px';
+                }
+                
+                const nameContainer = body.querySelector('.image-name-container');
+                if (nameContainer) {
+                   nameContainer.classList.add('items-center', 'justify-center', 'w-full');
+                   nameContainer.style.marginTop = '0';
+                   nameContainer.style.paddingRight = '0';
+                   
+                   const nameText = nameContainer.querySelector('.two-col-group-name');
+                   if (nameText) {
+                      nameText.style.textAlign = 'center';
+                      nameText.style.width = '100%';
+                   }
+                }
              }
           });
 
@@ -477,8 +504,8 @@
               textDiv.style.backgroundColor = 'transparent';
               textDiv.style.display = 'flex';
               textDiv.style.alignItems = 'center';
-              textDiv.style.justifyContent = 'center'; // 常に中央寄せ
-              textDiv.style.lineHeight = '1.8'; // 表示切れ防止のためさらに広く
+              textDiv.style.justifyContent = 'center'; // 文字も中央寄せ
+              textDiv.style.lineHeight = '1.8'; // 表示切れ防止
               textDiv.style.color = input.value ? 'inherit' : '#9ca3af';
               textDiv.style.overflow = 'visible'; 
               textDiv.style.width = '100%';
@@ -508,6 +535,7 @@
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
+          // 高さを動的に測定
           const measuredHeight = clone.offsetHeight + 100;
 
           const canvas = await html2canvas(wrapper, { 
@@ -667,7 +695,7 @@
                       <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* おすすめバッジ帯 */}
+                        {/* おすすめバッジ帯（左） */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
@@ -720,8 +748,15 @@
                               <span className="export-text-lift text-[7.5px] sm:text-[9.5px] font-bold text-red-600 leading-none">被り</span>
                             </div>
                            )}
+
                            <button onClick={() => setSelections(prev => { const next = {...prev}; delete next[item.id]; return next; })} className="absolute top-1 right-1 p-1 text-gray-300 hover:text-red-500 transition-colors" aria-label="削除"><span className="text-[12px] font-bold">×</span></button>
                         </div>
+
+                        {/* おすすめ装飾帯（右） */}
+                        {isRecommended && (
+                          <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 shrink-0 border-l border-pink-200/50 shadow-inner">
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -747,7 +782,7 @@
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-700 whitespace-nowrap">サイズ:</span>
                 <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="text-[10px] sm:text-xs bg-gray-50 border border-gray-200 rounded px-1.5 py-1 outline-none cursor-pointer font-medium">
-                  <option value="9:16">9:16 (スマホ向・中央寄せ)</option>
+                  <option value="9:16">9:16 (スマホ向・一行)</option>
                   <option value="3:4">3:4 (2列/SNS向・中央寄せ)</option>
                 </select>
               </div>
