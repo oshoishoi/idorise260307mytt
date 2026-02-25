@@ -30,7 +30,6 @@
       font-family: 'Zen Maru Gothic', sans-serif;
     }
     
-    /* スクロールバーのカスタマイズ */
     .scrollbar-visible::-webkit-scrollbar {
       -webkit-appearance: none;
       height: 10px;
@@ -44,7 +43,6 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* 上下中央揃えを強化しつつ、補正をかけやすくするクラス */
     .force-text-center {
       display: inline-flex;
       align-items: center;
@@ -52,22 +50,20 @@
       line-height: 1;
     }
 
-    /* 縦書き設定 */
     .writing-vertical {
       writing-mode: vertical-rl;
       text-orientation: upright;
     }
 
-    /* レスポンシブ設定：2列表示かつスマホ時のフォント縮小 */
+    /* スマホ2列表示時のフォント・レイアウト微調整 */
     @media (max-width: 640px) {
       .two-col-group-name {
-        font-size: 0.62rem !important;
+        font-size: 0.65rem !important;
         letter-spacing: -0.05em;
         white-space: nowrap;
-        line-height: 1.1;
       }
-      .two-col-time-badge {
-        font-size: 0.65rem !important;
+      .two-col-badge {
+        font-size: 0.55rem !important;
         padding: 0px 2px !important;
       }
       .pop-badge-text {
@@ -90,7 +86,6 @@
     import { createRoot } from 'react-dom/client';
     import { CheckCircle2, Circle, MapPin, AlertTriangle, CalendarRange, ListTodo, Star, Coffee, Sparkles, Download, Loader2, Music } from 'lucide-react';
 
-    // 時刻パース関数
     function parseTime(timeStr) {
       if (!timeStr) return { start: 0, end: 0 };
       const parts = timeStr.split('-');
@@ -102,7 +97,6 @@
       return { start: parseHM(parts[0]), end: parseHM(parts[1]) };
     }
 
-    // 出演アイドルデータ (全8会場)
     const scheduleData = [
       { id: 1, stage: "Spotify O-EAST", name: "Palette Parade", time: "10:00-10:30" },
       { id: 2, stage: "Spotify O-EAST", name: "かすみ草とステラ", time: "10:30-11:00" },
@@ -379,7 +373,6 @@
           const sourceElement = document.getElementById('my-schedule-content');
           if (!sourceElement) return;
 
-          // 画像生成用の固定横幅（1000pxにコンパクト化して密度感をアップ）
           const exportWidth = 1000; 
           
           const wrapper = document.createElement('div');
@@ -394,10 +387,10 @@
 
           const clone = sourceElement.cloneNode(true);
           clone.style.width = '100%';
-          clone.style.height = 'auto'; // 高さは自動（中身にフィット）
+          clone.style.height = 'auto'; 
           clone.style.paddingBottom = '40px'; 
           
-          // ヘッダー統合（物理ガタつき解消）
+          // ヘッダー統合
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
@@ -413,7 +406,7 @@
             headerArea.appendChild(combinedRow);
           }
 
-          // 2列固定幅（画像内：横幅1000pxに合わせて調整）
+          // カラム幅固定
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
             col.style.width = columns.length > 1 ? '480px' : '900px';
@@ -424,11 +417,11 @@
             timelineContainer.style.display = 'flex';
             timelineContainer.style.flexDirection = 'row';
             timelineContainer.style.justifyContent = 'center';
-            timelineContainer.style.gap = '10px'; // 画像内でも「くっつく」設定
+            timelineContainer.style.gap = '10px';
             timelineContainer.style.padding = '0 10px';
           }
 
-          // フォームをテキストに置換
+          // フォーム置換
           const replaceInputWithDiv = (selector, defaultValue = '', placeholderAsDefault = false) => {
             const originalInputs = sourceElement.querySelectorAll(selector);
             const clonedInputs = clone.querySelectorAll(selector);
@@ -452,19 +445,17 @@
           replaceInputWithDiv('input.memo-input-field', '', true);
           replaceInputWithDiv('input.song-input-field', '', true);
 
-          // 全テキストを一律で -5.5px 上に引き上げる
+          // テキスト補正 -5.5px
           const textLifts = clone.querySelectorAll('.export-text-lift');
           textLifts.forEach(el => {
             el.style.position = 'relative';
             el.style.top = '-5.5px';
           });
 
-          clone.querySelectorAll('button[aria-label="削除"]').forEach(btn => btn.style.display = 'none');
-
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
-          // コンテンツの高さを測定
+          // 高さを動的に測定（内容量にフィット）
           const measuredHeight = clone.offsetHeight + 100;
 
           const canvas = await html2canvas(wrapper, { 
@@ -472,7 +463,7 @@
             useCORS: true,
             backgroundColor: '#f9fafb',
             width: exportWidth,
-            height: measuredHeight, // 内容量に応じた動的な高さ
+            height: measuredHeight,
             logging: false
           });
 
@@ -480,7 +471,7 @@
           const url = canvas.toDataURL('image/png');
           const a = document.createElement('a');
           a.href = url;
-          a.download = `my_timetable_${aspectRatio.replace(':', '_')}.png`;
+          a.download = `my_timetable_${userName || 'fan'}.png`;
           a.click();
         } catch (error) {
           console.error('画像生成エラー:', error);
@@ -621,10 +612,11 @@
                 return (
                   <React.Fragment key={item.id}>
                     <div className="relative pr-0">
+                      {/* デザイン改良：左右の余白を詰め、おすすめバッジを左端縦書きに */}
                       <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* デザイン提案：手書き風パステルおすすめバッジ */}
+                        {/* パステル・手書き風おすすめ帯 */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
@@ -637,8 +629,8 @@
                         )}
 
                         <div className={`flex-1 p-2 sm:p-2.5 flex flex-col border-l-4 ${borderColor} min-w-0`}>
-                           {/* ヘッダー：時刻と会場バッジ */}
-                           <div className="flex items-center gap-1.5 h-5 mb-1 flex-wrap overflow-hidden">
+                           {/* ヘッダー：時刻と会場バッジ（被らないように横並び） */}
+                           <div className="flex items-center gap-1 sm:gap-2 mb-1 h-5 overflow-hidden">
                               <div className="px-1.5 py-0.5 rounded shadow-sm force-text-center h-full bg-gray-100/80">
                                 <span className="export-text-lift font-mono font-bold text-[8.5px] sm:text-[11px] leading-none text-gray-700 two-col-time-badge">{item.time}</span>
                               </div>
@@ -647,8 +639,8 @@
                               </div>
                            </div>
 
-                           {/* アーティスト名：自動縮小＆...なし */}
                            <div className="relative pr-6">
+                              {/* アーティスト名：省略なし、1行、縮小 */}
                               <div className={`font-bold leading-none export-text-lift overflow-hidden two-col-group-name text-gray-900 ${isRecommended ? 'font-black' : ''}`}>
                                 {item.name}
                               </div>
@@ -695,6 +687,7 @@
 
         return (
           <div className={`mx-auto pb-24 h-full overflow-y-auto w-full`}>
+            {/* ツールバー */}
             <div className="flex items-center justify-between bg-white p-2 rounded-xl shadow-sm border border-gray-100 mb-2 mt-2 mx-auto max-w-xl">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-700 whitespace-nowrap">サイズ:</span>
@@ -705,13 +698,15 @@
               </div>
               <button onClick={handleDownload} disabled={isGenerating} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}{isGenerating ? '生成中...' : '画像生成'}</button>
             </div>
+
+            {/* コンテンツ */}
             <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative">
               <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
                 <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
                    <div className="flex items-center gap-1.5 shrink-0 h-6">
-                      <h2 className="text-[14px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2>
+                      <h2 className="text-[14px] sm:text-[16px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2>
                       <div className="px-1.5 py-0 bg-indigo-500 rounded-sm flex items-center justify-center h-4.5 translate-y-[1px]">
-                         <span className="export-text-lift text-[9px] font-bold text-white leading-none">Day1: 3/7(土)</span>
+                         <span className="export-text-lift text-[9px] sm:text-[10px] font-bold text-white leading-none">Day1: 3/7(土)</span>
                       </div>
                    </div>
                    <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center">
@@ -729,6 +724,8 @@
                    </div>
                 </div>
               </div>
+
+              {/* 2列時にカードがくっつく設定 */}
               <div className={`flex timeline-outer-container ${isTwoColumn ? 'flex-row items-start justify-center gap-[1px] px-[1px] py-4' : 'flex-col items-center py-4 px-2'}`}>
                 {isTwoColumn ? (
                   <>
