@@ -47,7 +47,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      line-height: 1;
+      line-height: 1.2;
     }
 
     .writing-vertical {
@@ -55,7 +55,7 @@
       text-orientation: upright;
     }
 
-    /* スマホ2列表示時のフォント・レイアウト微調整 */
+    /* レスポンシブ：2列表示かつスマホ時のフォント縮小 */
     @media (max-width: 640px) {
       .two-col-group-name {
         font-size: 0.65rem !important;
@@ -373,6 +373,7 @@
           const sourceElement = document.getElementById('my-schedule-content');
           if (!sourceElement) return;
 
+          // 画像生成用の固定横幅（コンパクト化して密度感をアップ）
           const exportWidth = 1000; 
           
           const wrapper = document.createElement('div');
@@ -390,7 +391,7 @@
           clone.style.height = 'auto'; 
           clone.style.paddingBottom = '40px'; 
           
-          // ヘッダー統合
+          // ヘッダー統合（ガタつき防止）
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
@@ -406,7 +407,7 @@
             headerArea.appendChild(combinedRow);
           }
 
-          // カラム幅固定
+          // 2列固定幅
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
             col.style.width = columns.length > 1 ? '480px' : '900px';
@@ -421,7 +422,7 @@
             timelineContainer.style.padding = '0 10px';
           }
 
-          // フォーム置換
+          // フォームをテキストに置換
           const replaceInputWithDiv = (selector, defaultValue = '', placeholderAsDefault = false) => {
             const originalInputs = sourceElement.querySelectorAll(selector);
             const clonedInputs = clone.querySelectorAll(selector);
@@ -436,14 +437,25 @@
               textDiv.style.backgroundColor = 'transparent';
               textDiv.style.display = 'flex';
               textDiv.style.alignItems = 'center';
-              textDiv.style.lineHeight = '1';
+              textDiv.style.lineHeight = '1.4'; // 行間を少し広げて欠けを防ぐ
               textDiv.style.color = input.value ? 'inherit' : '#9ca3af';
+              
+              // 重要：画像生成時に文字が切れないようにoverflowをvisibleに
+              textDiv.style.overflow = 'visible';
+              
               clonedInput.parentNode.insertBefore(textDiv, clonedInput);
               clonedInput.style.display = 'none';
             });
           };
           replaceInputWithDiv('input.memo-input-field', '', true);
           replaceInputWithDiv('input.song-input-field', '', true);
+
+          // テキストコンテナのoverflowを全解除して文字欠けを防ぐ
+          const allTextDivs = clone.querySelectorAll('.export-text-lift, .two-col-group-name');
+          allTextDivs.forEach(div => {
+             div.style.overflow = 'visible';
+             div.style.whiteSpace = 'nowrap';
+          });
 
           // テキスト補正 -5.5px
           const textLifts = clone.querySelectorAll('.export-text-lift');
@@ -452,10 +464,12 @@
             el.style.top = '-5.5px';
           });
 
+          clone.querySelectorAll('button[aria-label="削除"]').forEach(btn => btn.style.display = 'none');
+
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
-          // 高さを動的に測定（内容量にフィット）
+          // 高さを動的に測定
           const measuredHeight = clone.offsetHeight + 100;
 
           const canvas = await html2canvas(wrapper, { 
@@ -471,7 +485,7 @@
           const url = canvas.toDataURL('image/png');
           const a = document.createElement('a');
           a.href = url;
-          a.download = `my_timetable_${userName || 'fan'}.png`;
+          a.download = `my_timetable_${userName || 'idol'}.png`;
           a.click();
         } catch (error) {
           console.error('画像生成エラー:', error);
@@ -612,11 +626,10 @@
                 return (
                   <React.Fragment key={item.id}>
                     <div className="relative pr-0">
-                      {/* デザイン改良：左右の余白を詰め、おすすめバッジを左端縦書きに */}
                       <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
                         ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
 
-                        {/* パステル・手書き風おすすめ帯 */}
+                        {/* 手書き風パステルおすすめ帯 */}
                         {isRecommended && (
                           <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
                              <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
@@ -629,7 +642,7 @@
                         )}
 
                         <div className={`flex-1 p-2 sm:p-2.5 flex flex-col border-l-4 ${borderColor} min-w-0`}>
-                           {/* ヘッダー：時刻と会場バッジ（被らないように横並び） */}
+                           {/* ヘッダー：時刻と会場バッジ */}
                            <div className="flex items-center gap-1 sm:gap-2 mb-1 h-5 overflow-hidden">
                               <div className="px-1.5 py-0.5 rounded shadow-sm force-text-center h-full bg-gray-100/80">
                                 <span className="export-text-lift font-mono font-bold text-[8.5px] sm:text-[11px] leading-none text-gray-700 two-col-time-badge">{item.time}</span>
@@ -640,8 +653,8 @@
                            </div>
 
                            <div className="relative pr-6">
-                              {/* アーティスト名：省略なし、1行、縮小 */}
-                              <div className={`font-bold leading-none export-text-lift overflow-hidden two-col-group-name text-gray-900 ${isRecommended ? 'font-black' : ''}`}>
+                              {/* アーティスト名：1行、縮小、欠け防止 */}
+                              <div className={`font-bold leading-[1.3] export-text-lift overflow-visible two-col-group-name text-gray-900 ${isRecommended ? 'font-black' : ''}`}>
                                 {item.name}
                               </div>
                               {isRecommended && (
@@ -687,7 +700,6 @@
 
         return (
           <div className={`mx-auto pb-24 h-full overflow-y-auto w-full`}>
-            {/* ツールバー */}
             <div className="flex items-center justify-between bg-white p-2 rounded-xl shadow-sm border border-gray-100 mb-2 mt-2 mx-auto max-w-xl">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-700 whitespace-nowrap">サイズ:</span>
@@ -698,15 +710,13 @@
               </div>
               <button onClick={handleDownload} disabled={isGenerating} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}{isGenerating ? '生成中...' : '画像生成'}</button>
             </div>
-
-            {/* コンテンツ */}
             <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative">
               <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
                 <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
                    <div className="flex items-center gap-1.5 shrink-0 h-6">
                       <h2 className="text-[14px] sm:text-[16px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2>
                       <div className="px-1.5 py-0 bg-indigo-500 rounded-sm flex items-center justify-center h-4.5 translate-y-[1px]">
-                         <span className="export-text-lift text-[9px] sm:text-[10px] font-bold text-white leading-none">Day1: 3/7(土)</span>
+                         <span className="export-text-lift text-[9px] font-bold text-white leading-none">Day1: 3/7(土)</span>
                       </div>
                    </div>
                    <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center">
@@ -724,8 +734,6 @@
                    </div>
                 </div>
               </div>
-
-              {/* 2列時にカードがくっつく設定 */}
               <div className={`flex timeline-outer-container ${isTwoColumn ? 'flex-row items-start justify-center gap-[1px] px-[1px] py-4' : 'flex-col items-center py-4 px-2'}`}>
                 {isTwoColumn ? (
                   <>
