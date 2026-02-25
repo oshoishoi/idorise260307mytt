@@ -392,7 +392,7 @@
           clone.style.height = 'auto'; 
           clone.style.paddingBottom = '40px'; 
           
-          // ヘッダー統合
+          // ヘッダー統合（ガタつき防止）
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
             const inputField = sourceElement.querySelector('.name-input-field');
@@ -414,7 +414,7 @@
           // カラム幅固定
           const columns = clone.querySelectorAll('.timeline-column');
           columns.forEach(col => {
-            // スマホなら常に1列（横並びリスト）、PCの3:4なら2列
+            // スマホまたは一行設定なら1列、PCの3:4なら2列
             col.style.width = (isHorizontalMode || columns.length === 1) ? '680px' : '350px';
             col.style.flexShrink = '0';
           });
@@ -422,14 +422,14 @@
           const timelineContainer = clone.querySelector('.timeline-outer-container');
           if (timelineContainer) {
             timelineContainer.style.display = 'flex';
-            timelineContainer.style.flexDirection = (isHorizontalMode) ? 'column' : 'row';
+            timelineContainer.style.flexDirection = isHorizontalMode ? 'column' : 'row';
             timelineContainer.style.alignItems = 'center';
             timelineContainer.style.justifyContent = 'center';
             timelineContainer.style.gap = '5px';
             timelineContainer.style.padding = '0 5px';
           }
 
-          // カード内の中央寄せ・レイアウト処理
+          // カード内テキストの中央寄せロジック
           const cardBodies = clone.querySelectorAll('.image-card-body');
           cardBodies.forEach(body => {
              if (isHorizontalMode) {
@@ -460,11 +460,11 @@
                    if (nameText) {
                       nameText.style.textAlign = 'center';
                       nameText.style.width = '100%';
-                      // ★スマホの場合のみフォントサイズを2倍にする
+                      // スマホの場合のみフォントサイズを2倍にする
                       if (isMobileDevice) {
                          const currentSize = window.getComputedStyle(sourceElement.querySelector('.two-col-group-name')).fontSize;
                          const sizeNum = parseFloat(currentSize);
-                         nameText.style.fontSize = (sizeNum * 2.2) + 'px'; // 2倍+アルファで読みやすく
+                         nameText.style.fontSize = (sizeNum * 2.2) + 'px'; 
                       }
                    }
                 }
@@ -541,7 +541,6 @@
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
-          // 高さを動的に測定
           const measuredHeight = clone.offsetHeight + 100;
 
           const canvas = await html2canvas(wrapper, { 
@@ -787,19 +786,29 @@
         return (
           <div className={`mx-auto pb-24 h-full overflow-y-auto w-full`}>
             {/* ツールバー */}
-            <div className="flex items-center justify-between bg-white p-2 rounded-xl shadow-sm border border-gray-100 mb-2 mt-2 mx-auto max-w-xl">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-700 whitespace-nowrap">サイズ:</span>
-                <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="text-[10px] sm:text-xs bg-gray-50 border border-gray-200 rounded px-1.5 py-1 outline-none cursor-pointer font-medium">
-                  <option value="9:16">9:16 (スマホ向・中央寄せ)</option>
-                  <option value="3:4">3:4 (2列/SNS向・中央寄せ)</option>
-                </select>
+            <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-2 rounded-xl shadow-sm border border-gray-100 mb-2 mt-2 mx-auto max-w-xl gap-3">
+              <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
+                <button 
+                  onClick={() => setAspectRatio('9:16')}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-all ${aspectRatio === '9:16' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                >
+                  スマホ向け
+                </button>
+                <button 
+                  onClick={() => setAspectRatio('3:4')}
+                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-all ${aspectRatio === '3:4' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                >
+                  SNS向け
+                </button>
               </div>
-              <button onClick={handleDownload} disabled={isGenerating} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}{isGenerating ? '生成中...' : '画像生成'}</button>
+              <button onClick={handleDownload} disabled={isGenerating} className="flex items-center justify-center gap-1 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm w-full sm:w-auto">
+                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                {isGenerating ? '生成中...' : '画像生成'}
+              </button>
             </div>
 
-            {/* 画像コンテンツ */}
-            <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative pt-6 sm:pt-10">
+            {/* 画像コンテンツ本体 */}
+            <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative pt-8 sm:pt-12">
               <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
                 <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
                    <div className="flex items-center gap-1.5 shrink-0 h-6">
@@ -823,8 +832,6 @@
                    </div>
                 </div>
               </div>
-
-              {/* タイムライン本体 */}
               <div className={`flex timeline-outer-container ${isTwoColumn ? 'flex-row items-start justify-center gap-[1px] px-[1px] py-4' : 'flex-col items-center py-4 px-2'}`}>
                 {isTwoColumn ? (
                   <>
