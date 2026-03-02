@@ -7,7 +7,7 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- 手書き風に近い丸文字フォントを読み込み -->
+  <!-- 丸文字フォント -->
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
 
   <script type="importmap">
@@ -28,6 +28,7 @@
     body { 
       -webkit-tap-highlight-color: transparent;
       font-family: 'Zen Maru Gothic', sans-serif;
+      background-color: #f9fafb;
     }
     
     .scrollbar-visible::-webkit-scrollbar {
@@ -43,34 +44,34 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    .force-text-center {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1.2;
-    }
-
     .writing-vertical {
       writing-mode: vertical-rl;
       text-orientation: upright;
     }
 
-    /* スマホ画面表示用のフォント縮小設定 */
+    /* アプリ内スケジュール画面のグループ名サイズ */
     @media (max-width: 640px) {
       .two-col-group-name {
-        font-size: 0.62rem !important;
-        letter-spacing: -0.05em;
-        white-space: nowrap;
-        line-height: 1.1;
+        font-size: 1.1rem;
+        font-weight: 900;
+        line-height: 1.2;
       }
-      .two-col-time-badge {
-        font-size: 0.65rem !important;
-        padding: 0px 2px !important;
-      }
-      .pop-badge-text {
-        font-size: 0.55rem !important;
-        letter-spacing: -0.1em;
-      }
+    }
+
+    /* 画像生成時の描画最適化 */
+    .is-exporting {
+      text-rendering: auto;
+      -webkit-font-smoothing: antialiased;
+    }
+    .is-exporting .card-inner {
+      border-radius: 12px !important;
+      border: 1px solid #e5e7eb !important;
+      box-shadow: none !important;
+    }
+
+    /* 画像生成時はおすすめサイドバーを隠す */
+    .is-exporting .rec-sidebar {
+      display: none !important;
     }
 
     .font-handwritten {
@@ -79,18 +80,20 @@
     }
   </style>
 </head>
-<body class="bg-gray-50 overflow-hidden">
+<body class="overflow-hidden">
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
-    import React, { useState, useMemo, useCallback } from 'react';
+    import React, { useState, useMemo, useCallback, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { CheckCircle2, Circle, MapPin, AlertTriangle, CalendarRange, ListTodo, Star, Coffee, Sparkles, Download, Loader2, Music } from 'lucide-react';
+    import { CheckCircle2, Circle, MapPin, AlertTriangle, CalendarRange, ListTodo, Star, Coffee, Download, Loader2, Music } from 'lucide-react';
+
+    const STICKY_HEADER_HEIGHT = 24;
+    const PIXELS_PER_MINUTE = 3;
 
     function parseTime(timeStr) {
       if (!timeStr) return { start: 0, end: 0 };
       const parts = timeStr.split('-');
-      if (parts.length !== 2) return { start: 0, end: 0 };
       const parseHM = (hm) => {
         const [h, m] = hm.split(':').map(Number);
         return h * 60 + m;
@@ -240,7 +243,6 @@
       { id: 140, stage: "Spotify O-Crest", name: "myojou", time: "16:55-17:20" },
       { id: 141, stage: "Spotify O-Crest", name: "THE ENCORE", time: "17:20-17:45" },
       { id: 142, stage: "Spotify O-Crest", name: "AOAO", time: "17:45-18:10" },
-      { id: 143, stage: "Spotify O-Crest", name: "ラナキュラ", time: "18:15-18:40" },
       { id: 144, stage: "Spotify O-Crest", name: "すべての瞬間は君だった。", time: "18:40-19:05" },
       { id: 145, stage: "Spotify O-Crest", name: "Peel the Apple", time: "19:05-19:30" },
       { id: 146, stage: "Spotify O-Crest", name: "Sweet Alley", time: "19:30-19:55" },
@@ -268,585 +270,482 @@
     ];
 
     const stageColors = {
-      "Spotify O-EAST": "bg-red-500 text-white",
-      "Spotify O-WEST": "bg-orange-500 text-white",
-      "duo MUSIC EXCHANGE": "bg-green-500 text-white",
-      "WOMB": "bg-pink-500 text-white",
-      "clubasia": "bg-blue-500 text-white",
-      "SHIBUYA RING": "bg-teal-500 text-white",
-      "Spotify O-Crest": "bg-sky-400 text-white",
-      "Spotify O-nest": "bg-purple-500 text-white"
+      "Spotify O-EAST": "bg-red-500 text-white", "Spotify O-WEST": "bg-orange-500 text-white",
+      "duo MUSIC EXCHANGE": "bg-green-500 text-white", "WOMB": "bg-pink-500 text-white",
+      "clubasia": "bg-blue-500 text-white", "SHIBUYA RING": "bg-teal-500 text-white",
+      "Spotify O-Crest": "bg-sky-400 text-white", "Spotify O-nest": "bg-purple-500 text-white"
+    };
+
+    const stageHexColors = {
+      "Spotify O-EAST": "#ef4444", "Spotify O-WEST": "#f97316",
+      "duo MUSIC EXCHANGE": "#22c55e", "WOMB": "#ec4899",
+      "clubasia": "#3b82f6", "SHIBUYA RING": "#14b8a6",
+      "Spotify O-Crest": "#38bdf8", "Spotify O-nest": "#a855f7"
     };
 
     const stageBorderColors = {
-      "Spotify O-EAST": "border-red-500",
-      "Spotify O-WEST": "border-orange-500",
-      "duo MUSIC EXCHANGE": "border-green-500",
-      "WOMB": "border-pink-500",
-      "clubasia": "border-blue-500",
-      "SHIBUYA RING": "border-teal-500",
-      "Spotify O-Crest": "border-sky-400",
-      "Spotify O-nest": "border-purple-500"
+      "Spotify O-EAST": "border-red-500", "Spotify O-WEST": "border-orange-500",
+      "duo MUSIC EXCHANGE": "border-green-500", "WOMB": "border-pink-500",
+      "clubasia": "border-blue-500", "SHIBUYA RING": "border-teal-500",
+      "Spotify O-Crest": "border-sky-400", "Spotify O-nest": "border-purple-500"
     };
 
-    const stageLightColors = {
-      "Spotify O-EAST": "bg-red-500/10",
-      "Spotify O-WEST": "bg-orange-500/10",
-      "duo MUSIC EXCHANGE": "bg-green-500/10",
-      "WOMB": "bg-pink-500/10",
-      "clubasia": "bg-blue-500/10",
-      "SHIBUYA RING": "bg-teal-500/10",
-      "Spotify O-Crest": "bg-sky-400/10",
-      "Spotify O-nest": "bg-purple-500/10"
+    const TimetableCard = React.memo(({ item, selections, songMemo, onSongChange, onRemove, isGenerating }) => {
+      const isRecommended = selections[item.id] === 'recommended';
+      const borderColor = stageBorderColors[item.stage] || 'border-gray-800';
+      const badgeColor = stageColors[item.stage] || 'bg-gray-800 text-white';
+
+      const getDynamicFontSize = (name) => {
+          if (!isGenerating) return {};
+          if (name.length > 15) return { fontSize: '10.5px' };
+          if (name.length > 10) return { fontSize: '12px' };
+          return { fontSize: '14.5px' };
+      };
+
+      return (
+        <div className="item-wrapper relative flex flex-col w-full h-full">
+          <div className={`card-inner rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[60px] transition-all flex-1
+            ${isRecommended ? 'bg-gradient-to-br from-white via-white to-orange-50/50' : 'bg-white'}`}>
+
+            {/* おすすめサイドバー (アプリ内のみ) */}
+            {isRecommended && !isGenerating && (
+              <div className="rec-sidebar w-5 sm:w-6 bg-gradient-to-b from-orange-100 via-yellow-200 to-white flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-orange-200/50">
+                 <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm"><Star size={9} className="fill-orange-400 text-orange-400" /></div>
+                 <div className="writing-vertical flex items-center justify-center font-handwritten">
+                   <span className="export-text-lift text-[8px] sm:text-[9.5px] font-black text-orange-600 tracking-tighter force-text-center">おすすめ</span>
+                 </div>
+              </div>
+            )}
+
+            <div className={`image-card-body flex-1 p-1.5 sm:p-2 flex flex-row items-center border-l-4 ${borderColor} min-w-0 h-full relative`}>
+               <div className={`left-col-meta flex flex-col items-center shrink-0 ${isGenerating ? 'w-[60px]' : 'w-[70px] sm:w-[90px]'} mr-1.5 sm:mr-2`}>
+                  <div className="px-1 py-0.5 rounded bg-gray-100/80 mb-0.5 w-full text-center time-container">
+                    <span className="export-text-lift font-mono font-bold text-[8.5px] sm:text-[10px] leading-none text-gray-700 whitespace-nowrap">{item.time}</span>
+                  </div>
+                  <div className={`px-1 py-0.5 rounded-full w-full text-center ${badgeColor} stage-badge overflow-hidden`}>
+                    <span className="export-text-lift text-[7px] sm:text-[8px] font-bold whitespace-nowrap overflow-hidden leading-none truncate-stage">
+                      {item.stage.replace('Spotify ', '')}
+                    </span>
+                  </div>
+               </div>
+
+               <div className="center-col-name flex-1 flex flex-col justify-center min-w-0 px-1 overflow-hidden">
+                  <div 
+                    className={`font-bold export-text-lift two-col-group-name text-gray-900 text-left w-full ${isRecommended ? 'font-black' : ''}`}
+                    style={{ 
+                      ...getDynamicFontSize(item.name), 
+                      lineHeight: '1.2',
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1
+                    }}
+                  >
+                    {item.name}
+                  </div>
+                  {/* 曲名表示 (アプリ内は input, 生成時は span) */}
+                  {isRecommended && (
+                    <div className="song-info-container flex items-center gap-1 mt-0.5 overflow-hidden justify-center">
+                       <Music size={isGenerating ? 7 : 8} className="text-orange-300 shrink-0 song-decoration-icon" />
+                       {!isGenerating ? (
+                         <input 
+                           type="text" 
+                           placeholder="曲名" 
+                           value={songMemo} 
+                           onChange={(e) => onSongChange(item.id, e.target.value)} 
+                           className="song-input-field text-[8.5px] font-bold bg-transparent w-full focus:outline-none placeholder-orange-100 text-orange-900 leading-none" 
+                         />
+                       ) : (
+                         <span className="text-[10px] font-bold text-orange-700 truncate leading-none song-memo-text-node">{songMemo}</span>
+                       )}
+                    </div>
+                  )}
+               </div>
+               
+               {isGenerating && isRecommended && (
+                 <div className="absolute top-1 right-1 text-orange-500">
+                   <Star size={8} className="fill-orange-500" />
+                 </div>
+               )}
+
+               {!isGenerating && <button onClick={() => onRemove(item.id)} className="shrink-0 p-1 text-gray-300 hover:text-red-500 transition-colors ml-1" aria-label="削除"><span className="text-[12px] font-bold">×</span></button>}
+            </div>
+          </div>
+        </div>
+      );
+    });
+
+    const AllStageTimetable = ({ processedSchedule, selections, toggleSelection, recommendedCount, busyRanges, MIN_TIME }) => {
+      const stages = useMemo(() => Array.from(new Set(processedSchedule.map(item => item.stage))), [processedSchedule]);
+      const stageLightColors = { "Spotify O-EAST": "bg-red-500/10", "Spotify O-WEST": "bg-orange-500/10", "duo MUSIC EXCHANGE": "bg-green-500/10", "WOMB": "bg-pink-500/10", "clubasia": "bg-blue-500/10", "SHIBUYA RING": "bg-teal-500/10", "Spotify O-Crest": "bg-sky-400/10", "Spotify O-nest": "bg-purple-500/10" };
+
+      return (
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="px-4 py-1 flex-none bg-white/80 backdrop-blur-sm z-20">
+            <div className="flex items-center justify-between">
+              <p className="text-gray-600 text-[10px] m-0 font-bold tracking-tight">タップで選択 / 通常→おすすめ切替</p>
+              <div className="inline-flex items-center px-2 py-0.5 bg-yellow-100 border border-yellow-200 rounded shrink-0">
+                <Star size={10} className="fill-yellow-500 text-yellow-500 mr-1" /><span className="text-[10px] font-bold text-yellow-800 leading-none">おすすめ {recommendedCount}/5</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 overflow-x-auto scrollbar-visible mt-1 px-4 relative scrollbar-visible">
+            <div className="flex flex-row gap-3 min-w-max h-full overflow-y-auto pb-32 hide-scrollbar relative">
+              <div className="absolute top-0 left-0 w-full pointer-events-none z-0">
+                {busyRanges.map((range, i) => (
+                  <div key={i} className={`absolute w-full border-y border-black/5 ${stageLightColors[range.stage] || 'bg-indigo-500/10'}`} style={{ top: `${STICKY_HEADER_HEIGHT + 6 + (range.start - MIN_TIME) * PIXELS_PER_MINUTE}px`, height: `${(range.end - range.start) * PIXELS_PER_MINUTE}px` }} />
+                ))}
+              </div>
+              {stages.map(stage => {
+                const stageItems = processedSchedule.filter(item => item.stage === stage).sort((a,b) => a.parsedTime.start - b.parsedTime.start);
+                if (stageItems.length === 0) return null;
+                let lastEnd = MIN_TIME;
+                return (
+                  <div key={stage} className="w-[80vw] sm:w-[280px] flex-shrink-0 flex flex-col bg-white/40 rounded-xl shadow-sm border border-gray-100 h-fit min-h-full z-10 text-ellipsis">
+                    <div className={`px-3 py-1 font-bold flex items-center gap-1.5 sticky top-0 z-30 text-xs rounded-t-xl ${stageColors[stage] || 'bg-gray-800 text-white'}`} style={{ height: `${STICKY_HEADER_HEIGHT}px` }}><MapPin size={14} /><span className="truncate">{stage}</span></div>
+                    <div className="p-1.5 flex-1 relative bg-transparent">
+                      {stageItems.map(item => {
+                        const gap = item.parsedTime.start - lastEnd; lastEnd = item.parsedTime.end;
+                        const isSel = selections[item.id];
+                        return (
+                          <React.Fragment key={item.id}>
+                            {gap > 0 && <div style={{ height: `${gap * PIXELS_PER_MINUTE}px` }} />}
+                            <button onClick={() => toggleSelection(item.id)} style={{ height: `${(item.parsedTime.end - item.parsedTime.start) * PIXELS_PER_MINUTE}px` }} className={`w-full text-left px-1.5 py-0 rounded-md flex items-center justify-between border overflow-hidden ${isSel ? `${stageColors[stage]} shadow-md border-transparent` : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                              <div className="flex flex-col justify-center h-full w-full pr-1 overflow-hidden whitespace-nowrap text-ellipsis">
+                                <span className={`text-[9px] font-mono whitespace-nowrap leading-none mb-0.5 ${isSel ? 'text-white/80' : 'text-gray-500'}`}>{item.time}</span>
+                                <span className={`font-bold text-[13px] sm:text-[15px] leading-tight text-left truncate ${isSel ? 'text-white' : 'text-gray-900'}`}>{item.name}</span>
+                              </div>
+                              <div className="flex-shrink-0">{selections[item.id] === 'recommended' ? <Star className="text-yellow-300 fill-yellow-300" size={14} /> : (isSel ? <CheckCircle2 className="text-white" size={14} /> : <Circle className="text-gray-300" size={14} />)}</div>
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
     };
 
     function App() {
       const [activeTab, setActiveTab] = useState('all');
       const [selections, setSelections] = useState({}); 
-      const [gapMemos, setGapMemos] = useState({}); 
       const [songMemos, setSongMemos] = useState({}); 
       const [toastMsg, setToastMsg] = useState('');
       const [userName, setUserName] = useState('');
-      const [aspectRatio, setAspectRatio] = useState('9:16');
       const [isGenerating, setIsGenerating] = useState(false);
 
-      const processedSchedule = useMemo(() => {
-        return scheduleData.map(item => ({
-          ...item,
-          parsedTime: parseTime(item.time)
-        }));
-      }, []);
-
-      const MIN_TIME = useMemo(() => {
-        return Math.min(...processedSchedule.map(item => item.parsedTime.start));
-      }, [processedSchedule]);
-
-      const stages = useMemo(() => {
-        const stageSet = new Set(scheduleData.map(item => item.stage));
-        return Array.from(stageSet);
-      }, []);
+      const processedSchedule = useMemo(() => scheduleData.map(item => ({ ...item, parsedTime: parseTime(item.time) })), []);
+      const MIN_TIME = useMemo(() => Math.min(...processedSchedule.map(item => item.parsedTime.start)), [processedSchedule]);
+      const mySchedule = useMemo(() => processedSchedule.filter(s => selections[s.id]).sort((a, b) => a.parsedTime.start - b.parsedTime.start), [processedSchedule, selections]);
+      const recommendedCount = useMemo(() => Object.values(selections).filter(v => v === 'recommended').length, [selections]);
 
       const busyRanges = useMemo(() => {
-        return Object.keys(selections)
-          .map(id => {
+        return Object.keys(selections).map(id => {
             const item = processedSchedule.find(p => p.id === parseInt(id));
             return item ? { ...item.parsedTime, stage: item.stage } : null;
-          })
-          .filter(Boolean);
+        }).filter(Boolean);
       }, [selections, processedSchedule]);
 
-      const recommendedCount = Object.values(selections).filter(v => v === 'recommended').length;
-
-      const toggleSelection = (id) => {
+      const toggleSelection = useCallback((id) => {
         setSelections(prev => {
-          const current = prev[id];
           const next = { ...prev };
-          if (!current) {
-            next[id] = 'normal';
-          } else if (current === 'normal') {
-            const currentRecommendedCount = Object.values(prev).filter(v => v === 'recommended').length;
-            if (currentRecommendedCount >= 5) {
-              setToastMsg('おすすめの選択は5グループまでです！');
-              setTimeout(() => setToastMsg(''), 3000);
+          if (!prev[id]) next[id] = 'normal';
+          else if (prev[id] === 'normal') {
+            if (Object.values(prev).filter(v => v === 'recommended').length >= 5) {
+              setToastMsg('おすすめは5個まで！'); setTimeout(() => setToastMsg(''), 3000);
               delete next[id];
-            } else {
-              next[id] = 'recommended';
-            }
-          } else {
-            delete next[id];
-          }
+            } else next[id] = 'recommended';
+          } else delete next[id];
           return next;
         });
-      };
+      }, []);
 
-      const handleMemoChange = (gapKey, text) => {
-        setGapMemos(prev => ({ ...prev, [gapKey]: text }));
-      };
+      const onRemove = useCallback((id) => setSelections(prev => { const n = {...prev}; delete n[id]; return n; }), []);
+      const onSongChange = useCallback((id, val) => setSongMemos(prev => ({ ...prev, [id]: val })), []);
+      const handleTabChange = useCallback((tab) => { setActiveTab(tab); }, []);
 
-      const handleSongChange = (id, text) => {
-        setSongMemos(prev => ({ ...prev, [id]: text }));
-      };
+      const getScheduleWithGaps = useCallback(() => {
+          const elements = [];
+          mySchedule.forEach((item, i) => {
+              elements.push({ type: 'card', data: item });
+              const next = mySchedule[i+1];
+              if (next && (next.parsedTime.start - item.parsedTime.end) >= 15) {
+                  elements.push({ type: 'gap', minutes: (next.parsedTime.start - item.parsedTime.end) });
+              }
+          });
+          return elements;
+      }, [mySchedule]);
 
       const handleDownload = async () => {
         setIsGenerating(true);
+        // 重要：Reactのspan切り替え反映を待つため、長めの待機時間を設ける
+        await new Promise(r => setTimeout(r, 500));
+        
         try {
           const sourceElement = document.getElementById('my-schedule-content');
           if (!sourceElement) return;
 
           const exportWidth = 720; 
-          const isMobileDevice = window.innerWidth < 640;
-          const isHorizontalMode = aspectRatio === '9:16' || isMobileDevice;
+          const exportHeight = 960; 
+          const headerHeight = 100; 
+          const marginVal = 13.33; 
+          const gapBetweenItems = 2; 
           
+          const availableBodyHeight = exportHeight - headerHeight - (marginVal * 2);
+          const rowHeight = (availableBodyHeight - (9 * gapBetweenItems)) / 10; 
+
           const wrapper = document.createElement('div');
           wrapper.style.width = `${exportWidth}px`;
+          wrapper.style.height = `${exportHeight}px`;
+          wrapper.className = 'is-exporting'; 
           wrapper.style.backgroundColor = '#f9fafb';
           wrapper.style.position = 'fixed';
           wrapper.style.left = '-9999px';
           wrapper.style.top = '0';
-          wrapper.style.zIndex = '-1';
           wrapper.style.display = 'flex';
           wrapper.style.flexDirection = 'column';
+          wrapper.style.overflow = 'hidden';
 
+          const elements = getScheduleWithGaps();
           const clone = sourceElement.cloneNode(true);
           clone.style.width = '100%';
-          clone.style.height = 'auto'; 
-          clone.style.paddingBottom = '40px'; 
-          
+          clone.style.height = '100%';
+          clone.style.paddingTop = '0px';
+
+          // クローンされたDOMに対して直接値を流し込む
+          const clonedRecCards = Array.from(clone.querySelectorAll('.item-wrapper'));
+
           const headerArea = clone.querySelector('.header-content-area');
           if (headerArea) {
-            const inputField = sourceElement.querySelector('.name-input-field');
-            const nameValue = inputField.value || '名前';
-            headerArea.innerHTML = '';
-            const combinedRow = document.createElement('div');
-            combinedRow.className = 'w-full flex items-center justify-center gap-6 py-6 bg-white';
-            combinedRow.innerHTML = `
-              <span class="export-text-lift text-[22px] font-black text-indigo-900 font-sans">IDORISE!! FESTIVAL 2026</span>
-              <span class="export-text-lift px-3 py-1 bg-indigo-500 text-white rounded font-bold text-[12px]">Day1: 3/7(土)</span>
-              <span class="export-text-lift text-[20px] font-bold text-gray-800">${nameValue} のタイテ</span>
+            headerArea.style.height = `${headerHeight}px`;
+            headerArea.style.minHeight = `${headerHeight}px`;
+            headerArea.style.backgroundColor = 'transparent'; // 背景を透過
+            headerArea.style.border = 'none'; // 境界線を削除
+            
+            headerArea.innerHTML = `
+              <div class="w-full flex flex-col items-center justify-center h-full bg-transparent">
+                <div class="flex items-center gap-4 mb-1">
+                  <span class="text-[28px] font-black text-indigo-900 tracking-tighter">IDORISE!! FESTIVAL 2026</span>
+                  <span class="text-indigo-700 font-black text-[14px] leading-none">Day1: 3/7(土)</span>
+                </div>
+                <div class="flex items-center gap-1">
+                   <span class="text-[22px] font-black text-gray-900">${userName || '名前'}</span>
+                   <span class="text-[18px] font-bold text-gray-500">のタイテ</span>
+                </div>
+              </div>
             `;
-            headerArea.appendChild(combinedRow);
           }
 
-          const columns = clone.querySelectorAll('.timeline-column');
-          columns.forEach(col => {
-            col.style.width = (isHorizontalMode || columns.length === 1) ? '680px' : '350px';
-            col.style.flexShrink = '0';
-          });
-          
           const timelineContainer = clone.querySelector('.timeline-outer-container');
           if (timelineContainer) {
+            timelineContainer.style.flex = '1';
             timelineContainer.style.display = 'flex';
-            timelineContainer.style.flexDirection = isHorizontalMode ? 'column' : 'row';
-            timelineContainer.style.alignItems = 'center';
-            timelineContainer.style.justifyContent = 'center';
-            timelineContainer.style.gap = '5px';
-            timelineContainer.style.padding = '0 5px';
-          }
+            timelineContainer.style.flexDirection = 'row'; 
+            timelineContainer.style.gap = '10px';
+            timelineContainer.style.padding = `${marginVal}px 10px`;
+            timelineContainer.innerHTML = ''; 
 
-          const cardBodies = clone.querySelectorAll('.image-card-body');
-          cardBodies.forEach(body => {
-             body.classList.remove('flex-col');
-             body.classList.add('flex-col', 'items-center', 'justify-center');
-             
-             if (isHorizontalMode) {
-                body.style.flexDirection = 'row';
-                body.style.justifyContent = 'start'; 
-                body.style.paddingLeft = '15px';
-                body.style.paddingRight = '15px';
-                body.style.minHeight = '80px'; 
-                body.style.paddingTop = '5px';
-                body.style.paddingBottom = '5px';
-             }
+            const columnsData = elements.length > 10 ? [elements.slice(0, 10), elements.slice(10)] : [elements];
 
-             const metaRow = body.querySelector('.image-meta-row');
-             if (metaRow) {
-                metaRow.classList.add('justify-center', 'w-full');
-                if (isHorizontalMode) {
-                  // ★グループ名の中央を縦に揃えるための固定幅オフセット設定
-                  metaRow.style.width = '140px'; 
-                  metaRow.style.flexShrink = '0';
-                  metaRow.style.marginRight = '0';
-                  metaRow.style.marginBottom = '0';
-                } else {
-                  metaRow.style.marginBottom = '6px';
-                }
-                metaRow.style.gap = '10px';
-             }
-             
-             const nameContainer = body.querySelector('.image-name-container');
-             if (nameContainer) {
-                nameContainer.classList.add('items-center', 'justify-center');
-                if (isHorizontalMode) {
-                  nameContainer.style.flex = '1';
-                  nameContainer.style.display = 'flex';
-                  nameContainer.style.flexDirection = 'row';
-                  nameContainer.style.alignItems = 'baseline';
-                  nameContainer.style.justifyContent = 'start'; 
-                  nameContainer.style.paddingLeft = '0';
-                }
-                
-                const nameText = nameContainer.querySelector('.two-col-group-name');
-                if (nameText) {
-                   nameText.style.textAlign = 'center';
-                   nameText.style.lineHeight = '1.2';
-                   if (isHorizontalMode) {
-                      // ★グループ名の横幅を固定して中央が揃うように
-                      nameText.style.width = '300px'; 
-                      // ★指示通りのフォントサイズ設定
-                      nameText.style.fontSize = isMobileDevice ? '64px' : '30px'; 
-                      nameText.style.fontWeight = '900';
+            columnsData.forEach((colItems) => {
+               const col = document.createElement('div');
+               col.style.flex = '1';
+               col.style.display = 'flex';
+               col.style.flexDirection = 'column';
+               col.style.gap = `${gapBetweenItems}px`; 
+               col.style.height = '100%';
+
+               colItems.forEach(el => {
+                  const elWrapper = document.createElement('div');
+                  elWrapper.style.height = `${rowHeight}px`; 
+                  elWrapper.style.display = 'flex';
+                  elWrapper.style.flexDirection = 'column';
+
+                  if (el.type === 'card') {
+                      const originalIdxInMySchedule = mySchedule.indexOf(el.data);
+                      const isRec = selections[el.data.id] === 'recommended';
+                      
+                      const itemClone = clonedRecCards[originalIdxInMySchedule];
+
+                      if (itemClone) {
+                          itemClone.style.height = '100%';
+                          itemClone.style.flex = '1';
+                          
+                          const inner = itemClone.querySelector('.card-inner');
+                          if(inner) {
+                              inner.style.height = '100%';
+                              inner.style.border = '1px solid #e5e7eb';
+                              inner.style.position = 'relative';
+                              
+                              if (isRec) {
+                                // 指示：ビタミンカラーの暖色グラデーションへ変更
+                                inner.style.background = 'linear-gradient(135deg, #fff7ed 0%, #ffffff 100%)';
+                                
+                                const recText = document.createElement('div');
+                                recText.textContent = 'おすすめ';
+                                recText.style.position = 'absolute';
+                                recText.style.right = '4px';
+                                recText.style.top = '0';
+                                recText.style.bottom = '0';
+                                recText.style.display = 'flex';
+                                recText.style.alignItems = 'center';
+                                recText.style.writingMode = 'vertical-rl';
+                                recText.style.fontSize = '8px';
+                                recText.style.fontWeight = '900';
+                                // テキストもビタミンオレンジへ変更
+                                recText.style.color = '#f97316';
+                                recText.style.letterSpacing = '1px';
+                                recText.style.transform = 'translateY(6px)';
+                                inner.appendChild(recText);
+                              } else {
+                                inner.style.background = '#ffffff';
+                              }
+                          }
+
+                          const body = itemClone.querySelector('.image-card-body');
+                          if(body) {
+                            body.style.padding = '2px 6px';
+                            body.style.height = '100%';
+                            body.style.borderLeft = `4px solid ${stageHexColors[el.data.stage] || '#000'}`;
+                            body.style.display = 'flex';
+                            body.style.alignItems = 'center';
+                          }
+                          
+                          const leftCol = body.querySelector('.left-col-meta');
+                          if(leftCol) {
+                              leftCol.style.width = '60px';
+                              leftCol.style.marginRight = '4px';
+                              leftCol.style.transform = 'translateY(-8px)';
+                              
+                              const timeDiv = leftCol.querySelector('.time-container');
+                              if(timeDiv) {
+                                  timeDiv.style.backgroundColor = 'transparent';
+                                  timeDiv.style.padding = '0';
+                                  timeDiv.style.marginBottom = '0';
+                              }
+
+                              const stBadge = leftCol.querySelector('.stage-badge');
+                              if(stBadge) {
+                                  stBadge.style.backgroundColor = 'transparent';
+                                  stBadge.style.borderRadius = '0';
+                                  stBadge.style.padding = '0';
+                                  stBadge.style.textAlign = 'center';
+                                  const stage = el.data.stage;
+                                  stBadge.style.color = stageHexColors[stage] || '#000000';
+                                  const span = stBadge.querySelector('span');
+                                  if(span) {
+                                      span.textContent = el.data.stage.replace('Spotify O-', '').replace('Spotify ', '');
+                                      span.style.fontWeight = '900'; 
+                                      span.style.fontSize = '11.5px';
+                                      span.style.overflow = 'visible'; 
+                                  }
+                              }
+                          }
+
+                          const centerCol = body.querySelector('.center-col-name');
+                          if(centerCol) {
+                              centerCol.style.alignItems = 'center';
+                              centerCol.style.justifyContent = 'center';
+                              centerCol.style.textAlign = 'center';
+                              centerCol.style.flex = '1';
+                              centerCol.style.overflow = 'visible';
+                              
+                              centerCol.style.transform = isRec ? 'translateY(2px)' : 'translateY(-2px)';
+                              
+                              const nameTxt = centerCol.querySelector('.two-col-group-name');
+                              if(nameTxt) {
+                                  const len = el.data.name.length;
+                                  nameTxt.style.fontSize = len > 15 ? '10.5px' : len > 10 ? '12px' : '14.5px';
+                                  nameTxt.style.fontWeight = '900';
+                                  nameTxt.style.lineHeight = '1.2';
+                                  nameTxt.style.letterSpacing = '0'; 
+                                  nameTxt.style.textAlign = 'center';
+                                  nameTxt.style.whiteSpace = 'normal';
+                              }
+                              const songCont = centerCol.querySelector('.song-info-container');
+                              if(songCont) {
+                                songCont.style.marginTop = '4px';
+                                songCont.style.justifyContent = 'center';
+                                songCont.style.alignItems = 'center'; 
+                                songCont.style.overflow = 'visible';
+                                songCont.style.display = 'flex';
+                                
+                                const icon = songCont.querySelector('.song-decoration-icon');
+                                if(icon) icon.style.transform = 'translateY(2px)';
+
+                                const memoSpan = songCont.querySelector('.song-memo-text-node');
+                                if (memoSpan) {
+                                    memoSpan.style.fontSize = '10px'; 
+                                    memoSpan.style.lineHeight = '1.5'; 
+                                    memoSpan.style.display = 'inline-block';
+                                    memoSpan.style.paddingBottom = '4px'; 
+                                    memoSpan.textContent = songMemos[el.data.id] || "";
+                                }
+                              }
+                          }
+                          
+                          itemClone.querySelector('button[aria-label="削除"]')?.remove();
+                          itemClone.querySelector('.absolute.top-1.right-1')?.remove();
+                          itemClone.querySelector('.rec-sidebar')?.remove();
+
+                          elWrapper.appendChild(itemClone);
+                      }
+                  } else {
+                      const gapDiv = document.createElement('div');
+                      gapDiv.style.height = '30%'; 
+                      gapDiv.style.marginTop = 'auto';
+                      gapDiv.style.marginBottom = 'auto';
+                      gapDiv.style.backgroundColor = '#f3f4f6';
+                      gapDiv.style.borderRadius = '8px';
+                      gapDiv.style.display = 'flex';
+                      gapDiv.style.alignItems = 'center';
+                      gapDiv.style.justifyContent = 'center';
+                      gapDiv.style.fontSize = '10px';
+                      gapDiv.style.fontWeight = 'bold';
+                      gapDiv.style.color = '#9ca3af';
+                      gapDiv.textContent = `☕️ ${el.minutes}分 空き`;
+                      gapDiv.style.paddingBottom = '6px';
+                      elWrapper.appendChild(gapDiv);
+                  }
+                  col.appendChild(elWrapper);
+               });
+               
+               if(colItems.length < 10) {
+                   for(let i=0; i < (10 - colItems.length); i++){
+                       const pad = document.createElement('div');
+                       pad.style.height = `${rowHeight}px`;
+                       col.appendChild(pad);
                    }
-                }
-             }
-
-             const songContainer = body.querySelector('.song-container-for-image');
-             if (songContainer) {
-                songContainer.classList.add('flex', 'items-center');
-                if (isHorizontalMode) {
-                   songContainer.style.fontSize = '12px';
-                   songContainer.style.marginTop = '0';
-                   songContainer.style.marginLeft = '15px'; 
-                   songContainer.style.textAlign = 'left'; 
-                   songContainer.style.color = '#be185d';
-                }
-             }
-          });
-
-          const replaceInputWithDiv = (selector, defaultValue = '', placeholderAsDefault = false) => {
-            const originalInputs = sourceElement.querySelectorAll(selector);
-            const clonedInputs = clone.querySelectorAll(selector);
-            originalInputs.forEach((input, index) => {
-              const clonedInput = clonedInputs[index];
-              if (!clonedInput) return;
-              let val = input.value || (placeholderAsDefault ? input.placeholder : defaultValue);
-              const textDiv = document.createElement('div');
-              textDiv.textContent = val;
-              textDiv.className = clonedInput.className;
-              textDiv.style.border = 'none';
-              textDiv.style.backgroundColor = 'transparent';
-              textDiv.style.display = 'flex';
-              textDiv.style.alignItems = 'center';
-              textDiv.style.justifyContent = 'center';
-              textDiv.style.lineHeight = '1.8'; 
-              textDiv.style.color = input.value ? 'inherit' : '#9ca3af';
-              textDiv.style.overflow = 'visible'; 
-              textDiv.style.width = '100%';
-              if (selector.includes('song-input')) {
-                textDiv.style.fontSize = '11px';
-              }
-              clonedInput.parentNode.insertBefore(textDiv, clonedInput);
-              clonedInput.style.display = 'none';
+               }
+               timelineContainer.appendChild(col);
             });
-          };
-          replaceInputWithDiv('input.memo-input-field', '', true);
-          replaceInputWithDiv('input.song-input-field', '', true);
-
-          const allTextDivs = clone.querySelectorAll('.export-text-lift, .two-col-group-name');
-          allTextDivs.forEach(div => {
-             div.style.overflow = 'visible';
-             div.style.whiteSpace = 'nowrap';
-          });
-
-          const textLifts = clone.querySelectorAll('.export-text-lift');
-          textLifts.forEach(el => {
-            el.style.position = 'relative';
-            el.style.top = '-5.5px';
-          });
-
-          clone.querySelectorAll('button[aria-label="削除"]').forEach(btn => btn.style.display = 'none');
+          }
 
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
-          const measuredHeight = clone.offsetHeight + 100;
+          await new Promise(r => setTimeout(r, 200));
 
           const canvas = await html2canvas(wrapper, { 
             scale: 2, 
-            useCORS: true,
-            backgroundColor: '#f9fafb',
-            width: exportWidth,
-            height: measuredHeight, 
-            logging: false
+            useCORS: true, 
+            backgroundColor: '#f9fafb', 
+            width: exportWidth, 
+            height: exportHeight, 
+            logging: false 
           });
-
           document.body.removeChild(wrapper);
           const url = canvas.toDataURL('image/png');
-          const a = document.createElement('a');
-          a.href = url; a.download = `my_timetable.png`; a.click();
-        } catch (error) {
-          console.error('画像生成エラー:', error);
-        } finally {
-          setIsGenerating(false);
-        }
-      };
-
-      const renderAllTimeTable = () => {
-        const PIXELS_PER_MINUTE = 3;
-        const STICKY_HEADER_HEIGHT = 24;
-
-        return (
-          <div className="flex flex-col h-full overflow-hidden">
-            <div className="px-4 py-1 flex-none bg-white/80 backdrop-blur-sm z-20">
-              {toastMsg && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-2 bg-gray-800 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 flex items-center gap-2">
-                  <AlertTriangle size={14} className="text-yellow-400" />
-                  {toastMsg}
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <p className="text-gray-600 text-[10px] m-0 text-ellipsis overflow-hidden whitespace-nowrap mr-2 font-bold tracking-tight">タップで選択 / 通常→おすすめ切替</p>
-                <div className="relative inline-flex items-center justify-center z-10 px-1.5 py-0.5 bg-yellow-100 border border-yellow-200 rounded shrink-0">
-                  <div className="flex items-center gap-1">
-                    <Star size={10} className="fill-yellow-500 text-yellow-500" />
-                    <span className="text-[10px] font-bold text-yellow-800 leading-none">おすすめ {recommendedCount}/5</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-x-auto scrollbar-visible mt-1 px-4 relative scrollbar-visible">
-              <div className="flex flex-row gap-3 min-w-max h-full overflow-y-auto pb-32 hide-scrollbar relative">
-                <div className="absolute top-0 left-0 w-full pointer-events-none z-0">
-                  {busyRanges.map((range, i) => (
-                    <div
-                      key={i}
-                      className={`absolute w-full border-y border-black/5 ${stageLightColors[range.stage] || 'bg-indigo-500/10'}`}
-                      style={{
-                        top: `${STICKY_HEADER_HEIGHT + 6 + (range.start - MIN_TIME) * PIXELS_PER_MINUTE}px`,
-                        height: `${(range.end - range.start) * PIXELS_PER_MINUTE}px`
-                      }}
-                    />
-                  ))}
-                </div>
-
-                {stages.map(stage => {
-                  const stageItems = processedSchedule
-                    .filter(item => item.stage === stage)
-                    .sort((a, b) => a.parsedTime.start - b.parsedTime.start);
-                  if (stageItems.length === 0) return null;
-                  let previousEndTime = MIN_TIME;
-                  return (
-                    <div key={stage} className="w-[80vw] sm:w-[280px] flex-shrink-0 flex flex-col bg-white/40 rounded-xl shadow-sm border border-gray-100 overflow-visible h-fit min-h-full z-10 text-ellipsis whitespace-nowrap">
-                      <div className={`px-3 py-1 font-bold flex items-center gap-1.5 sticky top-0 z-30 text-xs rounded-t-xl ${stageColors[stage] || 'bg-gray-800 text-white'}`} style={{ height: `${STICKY_HEADER_HEIGHT}px` }}>
-                        <MapPin size={14} />
-                        <span className="truncate">{stage}</span>
-                      </div>
-                      <div className="p-1.5 flex-1 relative bg-transparent">
-                        {stageItems.map(item => {
-                          const selectionStatus = selections[item.id];
-                          const isSelected = !!selectionStatus;
-                          const stageColorClass = stageColors[stage] || 'bg-gray-800 text-white';
-                          const gap = item.parsedTime.start - previousEndTime;
-                          const duration = item.parsedTime.end - item.parsedTime.start;
-                          previousEndTime = item.parsedTime.end;
-                          return (
-                            <React.Fragment key={item.id}>
-                              {gap > 0 && <div style={{ height: `${gap * PIXELS_PER_MINUTE}px` }} className="w-full" aria-hidden="true" />}
-                              <button 
-                                onClick={() => toggleSelection(item.id)}
-                                style={{ height: `${duration * PIXELS_PER_MINUTE}px` }}
-                                className={`w-full text-left px-1.5 py-0 rounded-md flex items-center justify-between transition-all active:scale-[0.98] border overflow-hidden
-                                  ${isSelected ? `${stageColorClass} shadow-md border-transparent` : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}
-                              >
-                                <div className="flex flex-col justify-center h-full w-full pr-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                                  <span className={`text-[9px] font-mono whitespace-nowrap leading-none mb-0.5 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>{item.time}</span>
-                                  {/* ★全ステージ一覧のグループ名を大きく */}
-                                  <span className={`font-bold text-[12px] sm:text-[14px] leading-tight text-left ${isSelected ? 'text-white' : 'text-gray-900'}`}>{item.name}</span>
-                                </div>
-                                <div className="flex-shrink-0">
-                                  {!isSelected && <Circle className="text-gray-300" size={14} />}
-                                  {selectionStatus === 'normal' && <CheckCircle2 className="text-white" size={14} />}
-                                  {selectionStatus === 'recommended' && <Star className="text-yellow-300 fill-yellow-300" size={14} />}
-                                </div>
-                              </button>
-                            </React.Fragment>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        );
-      };
-
-      const renderTimeline = (scheduleItems, offsetIndex, isTwoColumn) => {
-        return (
-          <div className={`relative pt-2 pb-6 space-y-1.5 timeline-column ${isTwoColumn ? 'flex-1 min-w-0 px-[0.25%]' : 'w-full max-w-xl mx-auto px-1'}`}>
-            <div className={`flex flex-col gap-1.5 sm:gap-2`}>
-            {scheduleItems.map((item, localIndex) => {
-              const globalIndex = offsetIndex + localIndex;
-              let isOverlapping = false;
-              let gapMinutes = 0;
-              let gapKey = null;
-
-              const myScheduleSorted = processedSchedule
-                .filter(si => selections[si.id])
-                .sort((a, b) => a.parsedTime.start - b.parsedTime.start);
-
-              if (globalIndex < myScheduleSorted.length - 1) {
-                const nextItem = myScheduleSorted[globalIndex + 1];
-                if (item.parsedTime.end > nextItem.parsedTime.start) isOverlapping = true;
-                else {
-                  gapMinutes = nextItem.parsedTime.start - item.parsedTime.end;
-                  gapKey = `${item.id}-${nextItem.id}`;
-                }
-              }
-              const borderColor = stageBorderColors[item.stage] || 'border-gray-800';
-              const badgeColor = stageColors[item.stage] || 'bg-gray-800 text-white';
-              const isRecommended = selections[item.id] === 'recommended';
-
-              return (
-                <React.Fragment key={item.id}>
-                  <div className="relative pr-0">
-                    <div className={`rounded-xl flex flex-row relative border border-gray-200 shadow-sm overflow-hidden min-h-[58px] transition-all
-                      ${isRecommended ? 'bg-gradient-to-br from-white via-white to-pink-50/30' : 'bg-white'}`}>
-
-                      {isRecommended && (
-                        <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 flex flex-col items-center justify-start py-1.5 shrink-0 border-r border-pink-200/50 shadow-inner">
-                           <div className="w-3.5 h-3.5 bg-white/90 rounded-full flex items-center justify-center mb-1 shadow-sm">
-                              <Star size={9} className="fill-pink-400 text-pink-400" />
-                           </div>
-                           <div className="writing-vertical flex items-center justify-center font-handwritten">
-                             <span className="export-text-lift text-[8.5px] sm:text-[10px] font-black text-pink-600 tracking-tighter pop-badge-text">おすすめ</span>
-                           </div>
-                        </div>
-                      )}
-
-                      <div className={`image-card-body flex-1 p-2 sm:p-2.5 flex flex-col border-l-4 ${borderColor} min-w-0`}>
-                         <div className="image-meta-row flex items-center gap-1 sm:gap-2 mb-1 h-5 overflow-hidden shrink-0">
-                            <div className={`px-1.5 py-0.5 rounded shadow-sm force-text-center h-full bg-gray-100/80`}>
-                              <span className="export-text-lift font-mono font-bold text-[8.5px] sm:text-[11px] leading-none text-gray-700 two-col-time-badge">{item.time}</span>
-                            </div>
-                            <div className={`px-2 py-0.5 rounded-full shadow-sm force-text-center h-full max-w-[55%] ${badgeColor}`}>
-                              <span className="export-text-lift text-[7.5px] sm:text-[10px] font-bold whitespace-nowrap overflow-hidden leading-none two-col-label">{item.stage.replace('Spotify ', '')}</span>
-                            </div>
-                         </div>
-
-                         <div className="image-name-container relative pr-6 mt-1 flex-1 flex flex-col justify-center min-w-0">
-                            <div className={`font-bold leading-[1.3] export-text-lift overflow-visible two-col-group-name text-gray-900 ${isRecommended ? 'font-black' : ''}`}>
-                              {item.name}
-                            </div>
-                            {isRecommended && !isGenerating && (
-                              <div className="mt-1 flex items-center gap-1 p-0.5 px-1 bg-white/70 border border-pink-100 rounded-md overflow-hidden min-h-[16px]">
-                                <Music size={8} className="text-pink-300 shrink-0" />
-                                <input 
-                                  type="text"
-                                  placeholder="曲名入力"
-                                  defaultValue={songMemos[item.id] || ''}
-                                  onBlur={(e) => handleSongChange(item.id, e.target.value)}
-                                  className="song-input-field text-[8.5px] font-bold bg-transparent w-full focus:outline-none placeholder-pink-100 text-pink-900 export-text-lift leading-none"
-                                />
-                              </div>
-                            )}
-                            {isRecommended && isGenerating && (
-                              <div className="song-container-for-image mt-1.5 flex items-center gap-1 overflow-visible">
-                                 <Music size={10} className="text-pink-300 shrink-0" />
-                                 <span className="text-[12px] font-bold text-pink-900">{songMemos[item.id]}</span>
-                              </div>
-                            )}
-                         </div>
-                         
-                         {isOverlapping && (
-                          <div className="mt-1 px-1.5 py-0 bg-red-50 border border-red-100 rounded flex items-center gap-0.5 w-max h-4 force-text-center">
-                            <AlertTriangle size={8} className="text-red-600" />
-                            <span className="export-text-lift text-[7.5px] sm:text-[9.5px] font-bold text-red-600 leading-none">被り</span>
-                          </div>
-                         )}
-
-                         <button onClick={() => setSelections(prev => { const next = {...prev}; delete next[item.id]; return next; })} className="absolute top-1 right-1 p-1 text-gray-300 hover:text-red-500 transition-colors" aria-label="削除"><span className="text-[12px] font-bold">×</span></button>
-                      </div>
-
-                      {/* おすすめ装飾帯（右） */}
-                      {isRecommended && (
-                        <div className="w-5 sm:w-6 bg-gradient-to-b from-pink-100 via-pink-200 to-orange-100 shrink-0 border-l border-pink-200/50 shadow-inner">
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {gapMinutes >= 15 && gapKey && (
-                    <div className="relative py-0.5">
-                      <div className="relative p-1 px-2 flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg shadow-sm h-7 sm:h-8 mx-0.5">
-                        <div className="flex items-center gap-0.5 text-gray-500 whitespace-nowrap h-full shrink-0"><Coffee size={10} /><span className="export-text-lift text-[8.5px] sm:text-[10px] font-bold text-gray-700 leading-none">{gapMinutes}分 空き</span></div>
-                        <input 
-                          type="text" 
-                          placeholder="メモ入力" 
-                          defaultValue={gapMemos[gapKey] || ''} 
-                          onBlur={(e) => handleMemoChange(gapKey, e.target.value)} 
-                          className="memo-input-field text-[8.5px] sm:text-[10px] bg-white border border-gray-200 rounded px-1.5 py-0.5 w-full focus:outline-none focus:ring-1 focus:ring-indigo-500 export-text-lift h-full" 
-                        />
-                      </div>
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-            </div>
-          </div>
-        );
-      };
-
-      const renderMyTimeTable = () => {
-        const selectedCount = Object.keys(selections).length;
-        if (selectedCount === 0) {
-          return (
-            <div className="max-w-lg mx-auto px-4 flex flex-col items-center justify-center py-20 text-gray-400 text-center">
-              <CalendarRange size={48} className="mb-4 opacity-50 mx-auto" />
-              <p>まだアイドルが選択されていません。</p>
-              <button onClick={() => setActiveTab('all')} className="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-full font-medium shadow-sm">一覧から選ぶ</button>
-            </div>
-          );
-        }
-
-        const mySchedule = processedSchedule
-          .filter(item => selections[item.id])
-          .sort((a, b) => a.parsedTime.start - b.parsedTime.start);
-        const isTwoColumn = aspectRatio === '3:4' && mySchedule.length >= 10;
-
-        return (
-          <div className={`mx-auto pb-24 h-full overflow-y-auto w-full scrollbar-visible`}>
-            {/* ツールバー */}
-            <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-2 rounded-xl shadow-sm border border-gray-100 mb-2 mt-2 mx-auto max-w-xl gap-3">
-              <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
-                <button 
-                  onClick={() => setAspectRatio('9:16')}
-                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-all ${aspectRatio === '9:16' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-                >
-                  スマホ向け
-                </button>
-                <button 
-                  onClick={() => setAspectRatio('3:4')}
-                  className={`flex-1 sm:flex-none px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-all ${aspectRatio === '3:4' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-                >
-                  SNS向け
-                </button>
-              </div>
-              <button onClick={handleDownload} disabled={isGenerating} className="flex items-center justify-center gap-1 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-sm w-full sm:w-auto">
-                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                {isGenerating ? '生成中...' : '画像生成'}
-              </button>
-            </div>
-
-            <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative pt-8 sm:pt-12">
-              <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
-                <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
-                   <div className="flex items-center gap-1.5 shrink-0 h-6">
-                      <h2 className="text-[14px] sm:text-[16px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2>
-                      <div className="px-1.5 py-0 bg-indigo-500 rounded-sm flex items-center justify-center h-4.5 translate-y-[1px]">
-                         <span className="export-text-lift text-[9px] sm:text-[10px] font-bold text-white leading-none">Day1: 3/7(土)</span>
-                      </div>
-                   </div>
-                   <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center font-sans font-bold">
-                      <input 
-                        type="text" 
-                        placeholder="名前を入力" 
-                        value={userName} 
-                        onChange={(e) => setUserName(e.target.value)} 
-                        className="name-input-field text-[14px] font-bold text-center pr-0.5 text-gray-800 bg-transparent w-[80px] focus:outline-none placeholder-gray-300" 
-                        maxLength="15" 
-                      />
-                      <span className="text-[12px] font-bold text-gray-600 whitespace-nowrap flex items-center h-full">
-                        <span className="export-text-lift text-node"> のタイテ</span>
-                      </span>
-                   </div>
-                </div>
-              </div>
-              <div className={`flex timeline-outer-container ${isTwoColumn ? 'flex-row items-start justify-center gap-[1px] px-[1px] py-4' : 'flex-col items-center py-4 px-2'}`}>
-                {isTwoColumn ? (
-                  <>
-                    {renderTimeline(mySchedule.slice(0, Math.ceil(mySchedule.length / 2)), 0, true)}
-                    {renderTimeline(mySchedule.slice(Math.ceil(mySchedule.length / 2)), Math.ceil(mySchedule.length / 2), true)}
-                  </>
-                ) : (
-                  renderTimeline(mySchedule, 0, false)
-                )}
-              </div>
-            </div>
-          </div>
-        );
+          const a = document.createElement('a'); 
+          a.href = url; 
+          a.download = `idol_timetable_final_v7.png`; 
+          a.click();
+        } catch (error) { console.error('画像生成エラー:', error); } finally { setIsGenerating(false); }
       };
 
       return (
@@ -855,26 +754,69 @@
             <h1 className="flex flex-row items-center justify-center gap-2 text-indigo-900">
               <span className="text-sm sm:text-base font-black tracking-tight whitespace-nowrap">IDORISE!! FESTIVAL 2026</span>
               <div className="flex flex-row items-center gap-1.5 h-5">
-                <div className="px-1.5 py-0 text-[9px] font-bold text-indigo-600 bg-indigo-50 rounded border border-indigo-100 whitespace-nowrap flex items-center justify-center h-full">
-                   <span className="export-text-lift">Day1: 3/7(土)</span>
-                </div>
-                <span className="text-[9px] font-normal text-gray-500 whitespace-nowrap leading-none pt-0.5 flex items-center h-full">
-                   <span className="export-text-lift text-node font-sans"> by ドルオタボックス</span>
-                </span>
+                <div className="px-1.5 py-0 text-[9px] font-bold text-indigo-600 bg-indigo-50 rounded border border-indigo-100 whitespace-nowrap flex items-center justify-center h-full"><span className="export-text-lift">Day1: 3/7(土)</span></div>
+                <span className="text-[9px] font-normal text-gray-500 whitespace-nowrap leading-none pt-0.5 flex items-center h-full"><span className="export-text-lift"> by ドルオタボックス</span></span>
               </div>
             </h1>
           </header>
-          <main className="flex-1 overflow-hidden pb-16">{activeTab === 'all' ? renderAllTimeTable() : renderMyTimeTable()}</main>
+          <main className="flex-1 overflow-hidden pb-16">
+            {activeTab === 'all' ? (
+              <AllStageTimetable processedSchedule={processedSchedule} selections={selections} toggleSelection={toggleSelection} recommendedCount={recommendedCount} busyRanges={busyRanges} MIN_TIME = {MIN_TIME} />
+            ) : (
+              <div className={`mx-auto pb-24 h-full overflow-y-auto w-full scrollbar-visible`}>
+                <div className="flex flex-col sm:flex-row items-center justify-center p-2 mb-2 mt-2 mx-auto max-w-xl">
+                  <button onClick={handleDownload} disabled={isGenerating} className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors shadow-lg w-full sm:w-auto active:scale-95">
+                    {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}{isGenerating ? '生成中...' : '画像を保存'}
+                  </button>
+                </div>
+                <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative pt-4 sm:pt-8">
+                  <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
+                       <div className="flex items-center gap-1.5 shrink-0 h-6"><h2 className="text-[14px] sm:text-[16px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2><div className="px-1.5 py-0 bg-indigo-500 rounded-sm flex items-center justify-center h-4.5 translate-y-[1px]"><span className="export-text-lift text-[9px] sm:text-[10px] font-bold text-white leading-none">Day1: 3/7(土)</span></div></div>
+                       <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center font-sans font-bold"><input type="text" placeholder="名前を入力" value={userName} onChange={(e) => setUserName(e.target.value)} className="name-input-field text-[14px] font-bold text-center pr-0.5 text-gray-800 bg-transparent w-[80px] focus:outline-none placeholder-gray-300" maxLength="15" /><span className="text-[12px] font-bold text-gray-600 whitespace-nowrap flex items-center h-full"><span className="export-text-lift"> のタイテ</span></span></div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center py-4 px-2 timeline-outer-container">
+                    <div className="flex flex-col gap-2 w-full max-w-xl mx-auto">
+                      {mySchedule.map((item) => (
+                        <TimetableCard 
+                          key={item.id} item={item} selections={selections}
+                          songMemo={songMemos[item.id] || ''}
+                          onSongChange={onSongChange} onRemove={onRemove} isGenerating={isGenerating}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50">
             <div className="max-w-lg mx-auto flex">
-              <button onClick={() => setActiveTab('all')} className={`flex-1 py-3 flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'all' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><ListTodo size={18} /><span className="text-[10px] font-bold">全ステージ一覧</span></button>
-              <button onClick={() => setActiveTab('mine')} className={`flex-1 py-3 flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'mine' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><div className="relative"><CalendarRange size={18} />{Object.keys(selections).length > 0 && <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{Object.keys(selections).length}</span>}</div><span className="text-[10px] font-bold">マイスケジュール</span></button>
+              <button onClick={() => handleTabChange('all')} className={`flex-1 py-3 flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'all' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><ListTodo size={18} /><span className="text-[10px] font-bold">全ステージ一覧</span></button>
+              <button onClick={() => handleTabChange('mine')} className={`flex-1 py-3 flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'mine' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><div className="relative"><CalendarRange size={18} />{Object.keys(selections).length > 0 && <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{Object.keys(selections).length}</span>}</div><span className="text-[10px] font-bold">マイスケジュール</span></button>
             </div>
           </div>
         </div>
       );
     }
-    createRoot(document.getElementById('root')).render(<App />);
+
+    const startApp = () => {
+      const rootElement = document.getElementById('root');
+      if (rootElement) {
+        try {
+          createRoot(rootElement).render(<App />);
+        } catch (e) {
+          console.error("React render error:", e);
+        }
+      }
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startApp);
+    } else {
+      startApp();
+    }
   </script>
 </body>
 </html>
