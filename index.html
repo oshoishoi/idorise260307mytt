@@ -297,9 +297,10 @@
 
       const getDynamicFontSize = (name) => {
           if (!isGenerating) return {};
-          if (name.length > 15) return { fontSize: '10.5px' };
-          if (name.length > 10) return { fontSize: '12px' };
-          return { fontSize: '14.5px' };
+          // 指示：グループ名のテキストをもっと大きく（前回比：14.5/12/10.5 -> 18/15/13）
+          if (name.length > 15) return { fontSize: '13px' };
+          if (name.length > 10) return { fontSize: '15px' };
+          return { fontSize: '18px' };
       };
 
       return (
@@ -583,7 +584,7 @@
                               inner.style.position = 'relative';
                               
                               if (isRec) {
-                                // 指示：ビタミンカラーの暖色グラデーションへ変更
+                                // ビタミンカラーの暖色グラデーション
                                 inner.style.background = 'linear-gradient(135deg, #fff7ed 0%, #ffffff 100%)';
                                 
                                 const recText = document.createElement('div');
@@ -597,7 +598,6 @@
                                 recText.style.writingMode = 'vertical-rl';
                                 recText.style.fontSize = '8px';
                                 recText.style.fontWeight = '900';
-                                // テキストもビタミンオレンジへ変更
                                 recText.style.color = '#f97316';
                                 recText.style.letterSpacing = '1px';
                                 recText.style.transform = 'translateY(6px)';
@@ -642,6 +642,10 @@
                                       span.textContent = el.data.stage.replace('Spotify O-', '').replace('Spotify ', '');
                                       span.style.fontWeight = '900'; 
                                       span.style.fontSize = '11.5px';
+                                      // 指示：会場名のテキストの下が切れている問題の改善
+                                      span.style.lineHeight = '1.5';
+                                      span.style.display = 'block';
+                                      span.style.paddingBottom = '2px';
                                       span.style.overflow = 'visible'; 
                                   }
                               }
@@ -659,8 +663,9 @@
                               
                               const nameTxt = centerCol.querySelector('.two-col-group-name');
                               if(nameTxt) {
+                                  // 指示：グループ名のテキストをもっと大きく
                                   const len = el.data.name.length;
-                                  nameTxt.style.fontSize = len > 15 ? '10.5px' : len > 10 ? '12px' : '14.5px';
+                                  nameTxt.style.fontSize = len > 15 ? '13px' : len > 10 ? '15px' : '18px';
                                   nameTxt.style.fontWeight = '900';
                                   nameTxt.style.lineHeight = '1.2';
                                   nameTxt.style.letterSpacing = '0'; 
@@ -743,7 +748,7 @@
           const url = canvas.toDataURL('image/png');
           const a = document.createElement('a'); 
           a.href = url; 
-          a.download = `idol_timetable_final_v7.png`; 
+          a.download = `idol_timetable_v8.png`; 
           a.click();
         } catch (error) { console.error('画像生成エラー:', error); } finally { setIsGenerating(false); }
       };
