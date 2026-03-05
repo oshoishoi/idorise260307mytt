@@ -268,21 +268,21 @@
       { id: 168, stage: "Spotify O-nest", name: "ルルネージュ", time: "19:25-19:50" }
     ];
 
-    const stageColors = {
+    const stageColorsMap = {
       "Spotify O-EAST": "bg-red-500 text-white", "Spotify O-WEST": "bg-orange-500 text-white",
       "duo MUSIC EXCHANGE": "bg-green-500 text-white", "WOMB": "bg-pink-500 text-white",
       "clubasia": "bg-blue-500 text-white", "SHIBUYA RING": "bg-teal-500 text-white",
       "Spotify O-Crest": "bg-sky-400 text-white", "Spotify O-nest": "bg-purple-500 text-white"
     };
 
-    const stageHexColors = {
+    const stageHexColorsMap = {
       "Spotify O-EAST": "#ef4444", "Spotify O-WEST": "#f97316",
       "duo MUSIC EXCHANGE": "#22c55e", "WOMB": "#ec4899",
       "clubasia": "#3b82f6", "SHIBUYA RING": "#14b8a6",
       "Spotify O-Crest": "#38bdf8", "Spotify O-nest": "#a855f7"
     };
 
-    const stageBorderColors = {
+    const stageBorderColorsMap = {
       "Spotify O-EAST": "border-red-500", "Spotify O-WEST": "border-orange-500",
       "duo MUSIC EXCHANGE": "border-green-500", "WOMB": "border-pink-500",
       "clubasia": "border-blue-500", "SHIBUYA RING": "border-teal-500",
@@ -291,8 +291,8 @@
 
     const TimetableCard = React.memo(({ item, selections, songMemo, onSongChange, onRemove, isGenerating }) => {
       const isRecommended = selections[item.id] === 'recommended';
-      const borderColor = stageBorderColors[item.stage] || 'border-gray-800';
-      const badgeColor = stageColors[item.stage] || 'bg-gray-800 text-white';
+      const borderColor = stageBorderColorsMap[item.stage] || 'border-gray-800';
+      const badgeColor = stageColorsMap[item.stage] || 'bg-gray-800 text-white';
 
       const getDynamicFontSize = (name) => {
           if (!isGenerating) return {};
@@ -351,7 +351,7 @@
                            placeholder="曲名" 
                            value={songMemo} 
                            onChange={(e) => onSongChange(item.id, e.target.value)} 
-                           className="song-input-field text-[8.5px] font-bold bg-transparent w-full focus:outline-none placeholder-orange-100 text-pink-900 leading-none" 
+                           className="song-input-field text-[8.5px] font-bold bg-transparent w-full focus:outline-none placeholder-orange-100 text-orange-900 leading-none" 
                          />
                        ) : (
                          <span className="text-[10px] font-bold text-orange-700 truncate leading-none song-memo-text-node">{songMemo}</span>
@@ -400,7 +400,7 @@
                 let lastEnd = MIN_TIME;
                 return (
                   <div key={stage} className="w-[80vw] sm:w-[280px] flex-shrink-0 flex flex-col bg-white/40 rounded-xl shadow-sm border border-gray-100 h-fit min-h-full z-10 text-ellipsis">
-                    <div className={`px-3 py-1 font-bold flex items-center gap-1.5 sticky top-0 z-30 text-xs rounded-t-xl ${stageColors[stage] || 'bg-gray-800 text-white'}`} style={{ height: `${STICKY_HEADER_HEIGHT}px` }}><MapPin size={14} /><span className="truncate">{stage}</span></div>
+                    <div className={`px-3 py-1 font-bold flex items-center gap-1.5 sticky top-0 z-30 text-xs rounded-t-xl ${stageColorsMap[stage] || 'bg-gray-800 text-white'}`} style={{ height: `${STICKY_HEADER_HEIGHT}px` }}><MapPin size={14} /><span className="truncate">{stage}</span></div>
                     <div className="p-1.5 flex-1 relative bg-transparent">
                       {stageItems.map(item => {
                         const gap = item.parsedTime.start - lastEnd; lastEnd = item.parsedTime.end;
@@ -408,7 +408,7 @@
                         return (
                           <React.Fragment key={item.id}>
                             {gap > 0 && <div style={{ height: `${gap * PIXELS_PER_MINUTE}px` }} />}
-                            <button onClick={() => toggleSelection(item.id)} style={{ height: `${(item.parsedTime.end - item.parsedTime.start) * PIXELS_PER_MINUTE}px` }} className={`w-full text-left px-1.5 py-0 rounded-md flex items-center justify-between border overflow-hidden ${isSel ? `${stageColors[stage]} shadow-md border-transparent` : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                            <button onClick={() => toggleSelection(item.id)} style={{ height: `${(item.parsedTime.end - item.parsedTime.start) * PIXELS_PER_MINUTE}px` }} className={`w-full text-left px-1.5 py-0 rounded-md flex items-center justify-between border overflow-hidden ${isSel ? `${stageColorsMap[stage]} shadow-md border-transparent` : 'bg-white border-gray-200 hover:border-gray-300'}`}>
                               <div className="flex flex-col justify-center h-full w-full pr-1 overflow-hidden whitespace-nowrap text-ellipsis">
                                 <span className={`text-[9px] font-mono whitespace-nowrap leading-none mb-0.5 ${isSel ? 'text-white/80' : 'text-gray-500'}`}>{item.time}</span>
                                 <span className={`font-bold text-[13px] sm:text-[15px] leading-tight text-left truncate ${isSel ? 'text-white' : 'text-gray-900'}`}>{item.name}</span>
@@ -598,7 +598,7 @@
                       const body = itemClone.querySelector('.image-card-body');
                       if(body) {
                         body.style.padding = '2px 6px'; body.style.height = '100%';
-                        body.style.borderLeft = `4px solid ${stageHexColors[el.data.stage] || '#000'}`;
+                        body.style.borderLeft = `4px solid ${stageHexColorsMap[el.data.stage] || '#000'}`;
                         body.style.display = 'flex'; body.style.alignItems = 'center';
                       }
                       const leftCol = body.querySelector('.left-col-meta');
@@ -611,7 +611,7 @@
                           if(stBadge) {
                               stBadge.style.backgroundColor = 'transparent'; stBadge.style.borderRadius = '0';
                               stBadge.style.padding = '0'; stBadge.style.textAlign = 'center';
-                              stBadge.style.color = stageHexColors[el.data.stage] || '#000000';
+                              stBadge.style.color = stageHexColorsMap[el.data.stage] || '#000000';
                               const span = stBadge.querySelector('span');
                               if(span) {
                                   span.textContent = el.data.stage.replace('Spotify O-', '').replace('Spotify ', '');
@@ -706,7 +706,7 @@
           const url = canvas.toDataURL('image/png');
           const a = document.createElement('a'); 
           a.href = url; 
-          a.download = `idol_timetable_v9_gap.png`; 
+          a.download = `idol_timetable_v1_0.png`; 
           a.click();
         } catch (error) { console.error('画像生成エラー:', error); } finally { setIsGenerating(false); }
       };
@@ -714,14 +714,11 @@
       return (
         <div className="h-screen flex flex-col overflow-hidden text-gray-900 font-sans">
           <header className="bg-white px-4 py-2 shadow-sm z-50 flex-none border-b border-gray-100">
-            <h1 className="flex flex-row items-center justify-center gap-2 text-indigo-900">
+            <h1 className="flex flex-row items-center justify-center gap-2 text-indigo-900 h-10">
               <span className="text-sm sm:text-base font-black tracking-tight whitespace-nowrap">IDORISE!! FESTIVAL 2026</span>
-              <div className="flex flex-row items-center gap-1.5 h-5">
-                <div className="px-1.5 py-0 text-[9px] font-bold text-indigo-600 bg-indigo-50 rounded border border-indigo-100 whitespace-nowrap flex items-center justify-center h-full"><span className="export-text-lift">Day1: 3/7(土)</span></div>
-                <span className="text-[9px] font-normal text-gray-500 whitespace-nowrap leading-none pt-0.5 flex items-center h-full"><span className="export-text-lift"> by ドルオタボックス</span></span>
-              </div>
             </h1>
           </header>
+
           <main className="flex-1 overflow-hidden pb-16">
             {activeTab === 'all' ? (
               <AllStageTimetable processedSchedule={processedSchedule} selections={selections} toggleSelection={toggleSelection} recommendedCount={recommendedCount} busyRanges={busyRanges} MIN_TIME = {MIN_TIME} />
@@ -732,11 +729,11 @@
                     {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}{isGenerating ? '生成中...' : '画像を保存'}
                   </button>
                 </div>
-                <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-full relative pt-4 sm:pt-8">
+                <div id="my-schedule-content" className="bg-gray-50 flex flex-col w-full h-fit relative">
                   <div className="bg-white border-b border-gray-200 shrink-0 header-content-area overflow-hidden py-4 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 w-full px-1">
-                       <div className="flex items-center gap-1.5 shrink-0 h-6"><h2 className="text-[14px] sm:text-[16px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2><div className="px-1.5 py-0 bg-indigo-500 rounded-sm flex items-center justify-center h-4.5 translate-y-[1px]"><span className="export-text-lift text-[9px] sm:text-[10px] font-bold text-white leading-none">Day1: 3/7(土)</span></div></div>
-                       <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center font-sans font-bold"><input type="text" placeholder="名前を入力" value={userName} onChange={(e) => setUserName(e.target.value)} className="name-input-field text-[14px] font-bold text-center pr-0.5 text-gray-800 bg-transparent w-[80px] focus:outline-none placeholder-gray-300" maxLength="15" /><span className="text-[12px] font-bold text-gray-600 whitespace-nowrap flex items-center h-full"><span className="export-text-lift"> のタイテ</span></span></div>
+                       <div className="flex items-center gap-1.5 shrink-0 h-6"><h2 className="text-[14px] sm:text-[16px] font-black text-indigo-900 tracking-tight m-0 whitespace-nowrap export-text-lift">IDORISE!! FESTIVAL 2026</h2><div className="px-1.5 py-0 bg-indigo-500 rounded-sm flex items-center justify-center h-4.5 translate-y-[1px] text-[9px] sm:text-[10px] font-bold text-white">Day1: 3/7(土)</div></div>
+                       <div className="name-input-container border-b-2 border-indigo-300 px-1 flex items-center h-7 min-w-[120px] justify-center font-sans font-bold"><input type="text" placeholder="名前を入力" value={userName} onChange={(e) => setUserName(e.target.value)} className="name-input-field text-[14px] font-bold text-center pr-0.5 text-gray-800 bg-transparent w-[80px] focus:outline-none placeholder-gray-300" maxLength="15" /><span className="text-[12px] font-bold text-gray-600 whitespace-nowrap flex items-center h-full"> のタイテ</span></div>
                     </div>
                   </div>
                   <div className="flex flex-col items-center py-4 px-2 timeline-outer-container">
@@ -761,7 +758,7 @@
                                     {!isGenerating ? (
                                         <input 
                                             type="text" 
-                                            placeholder="過ごし方を記入（移動、物販など）" 
+                                            placeholder="過ごし方を記入" 
                                             value={gapMemos[el.id] || ''}
                                             onChange={(e) => onGapMemoChange(el.id, e.target.value)}
                                             className="w-full bg-white/50 border border-gray-200 rounded px-2 py-1 text-[11px] font-bold text-center focus:outline-none focus:border-indigo-300 placeholder-gray-300"
@@ -781,30 +778,18 @@
             )}
           </main>
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50">
-            <div className="max-w-lg mx-auto flex">
-              <button onClick={() => handleTabChange('all')} className={`flex-1 py-3 flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'all' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><ListTodo size={18} /><span className="text-[10px] font-bold">全ステージ一覧</span></button>
-              <button onClick={() => handleTabChange('mine')} className={`flex-1 py-3 flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'mine' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><div className="relative"><CalendarRange size={18} />{Object.keys(selections).length > 0 && <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{Object.keys(selections).length}</span>}</div><span className="text-[10px] font-bold">マイスケジュール</span></button>
+            <div className="max-w-lg mx-auto flex h-16">
+              <button onClick={() => handleTabChange('all')} className={`flex-1 py-3 flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === 'all' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><ListTodo size={18} /><span className="text-[10px] font-bold">全ステージ一覧</span></button>
+              <button onClick={() => handleTabChange('mine')} className={`flex-1 py-3 flex flex-col items-center justify-center gap-0.5 transition-colors relative ${activeTab === 'mine' ? 'text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}><div className="relative"><CalendarRange size={18} />{Object.keys(selections).length > 0 && <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">{Object.keys(selections).length}</span>}</div><span className="text-[10px] font-bold">マイスケジュール</span></button>
             </div>
           </div>
         </div>
       );
     }
 
-    const startApp = () => {
-      const rootElement = document.getElementById('root');
-      if (rootElement) {
-        try {
-          createRoot(rootElement).render(<App />);
-        } catch (e) {
-          console.error("React render error:", e);
-        }
-      }
-    };
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', startApp);
-    } else {
-      startApp();
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      createRoot(rootElement).render(<App />);
     }
   </script>
 </body>
